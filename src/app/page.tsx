@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Home, 
   Users, 
@@ -39,7 +39,11 @@ import {
   Twitter,
   MessageCircle,
   Bell,
-  Settings
+  Settings,
+  LayoutGrid,
+  List,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 
 // Import mock data and utilities
@@ -695,12 +699,495 @@ export default function CardanoGovernancePlatform() {
     </div>
   );
 
-  const DRepDirectory = () => (
-    <div className="p-6">
-      <h3 className={cn('text-xl font-bold mb-6', theme.text)}>DRep Directory</h3>
-      <p className={theme.textSecondary}>DRep directory implementation...</p>
-    </div>
-  );
+  // DRep Directory Component with comprehensive features
+  const DRepDirectory = () => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [focusAreaFilter, setFocusAreaFilter] = useState<string>('all');
+    const [sortBy, setSortBy] = useState<'votingPower' | 'delegatorCount' | 'participationRate' | 'reputation'>('votingPower');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [showFilters, setShowFilters] = useState(false);
+
+    // Filter and sort DReps
+    const filteredAndSortedDReps = useMemo(() => {
+      let filtered = mockDReps.filter(drep => {
+        const matchesSearch = drep.metadata.manifesto.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            drep.metadata.experience.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            (drep.id === 'drep13g5w9xzdtkcqr4h8h' ? currentUser.profile.name.toLowerCase().includes(searchTerm.toLowerCase()) : false);
+        const matchesStatus = statusFilter === 'all' || drep.status === statusFilter;
+        const matchesFocusArea = focusAreaFilter === 'all' || drep.metadata.focusAreas.includes(focusAreaFilter);
+        
+        return matchesSearch && matchesStatus && matchesFocusArea;
+      });
+
+      // Sort DReps
+      filtered.sort((a, b) => {
+        const aValue = a.performance[sortBy] || a[sortBy];
+        const bValue = b.performance[sortBy] || b[sortBy];
+        
+        if (sortOrder === 'asc') {
+          return aValue - bValue;
+        } else {
+          return bValue - aValue;
+        }
+      });
+
+      return filtered;
+    }, [searchTerm, statusFilter, focusAreaFilter, sortBy, sortOrder]);
+
+    const DRepCard = ({ drep }: { drep: DRep }) => {
+      const isCurrentUser = drep.id === 'drep13g5w9xzdtkcqr4h8h';
+      const displayName = isCurrentUser ? currentUser.profile.name : `DRep ${drep.id.slice(0, 12)}...`;
+      const avatar = isCurrentUser ? currentUser.profile.avatar : `https://api.dicebear.com/7.x/avataaars/svg?seed=${drep.id}`;
+
+      return (
+        <div className={cn(
+          'p-6 rounded-xl border hover:shadow-lg transition-all duration-200 cursor-pointer group',
+          theme.cardBg, theme.border, 'hover:border-primary/50'
+        )}
+        onClick={() => setSelectedDRep(drep)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setSelectedDRep(drep);
+          }
+        }}
+        aria-label={`View details for ${displayName}`}
+        >
+          <div className="flex items-start gap-4">
+            <div className="relative">
+              <img 
+                src={avatar}
+                alt={`${displayName} avatar`}
+                className="w-16 h-16 rounded-full border-2 border-primary/20 group-hover:border-primary/40 transition-colors"
+              />
+              {drep.status === 'active' && (
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-3 h-3 text-white" />
+                </div>
+              )}
+            </div>
+            
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 mb-2">
+                <h3 className={cn('text-lg font-semibold truncate', theme.text)}>
+                  {displayName}
+                </h3>
+                <span className={cn(
+                  'px-3 py-1 rounded-full text-xs font-medium',
+                  drep.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                  'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+                )}>
+                  {drep.status}
+                </span>
+              </div>
+              
+              <p className={cn('text-sm mb-4 line-clamp-2', theme.textSecondary)}>
+                {drep.metadata.manifesto}
+              </p>
+              
+              {/* Performance Metrics */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <div className={cn('text-xl font-bold', theme.text)}>
+                    {formatADA(drep.votingPower, { compact: true })}
+                  </div>
+                  <div className={cn('text-xs', theme.textSecondary)}>Voting Power</div>
+                </div>
+                <div>
+                  <div className={cn('text-xl font-bold', theme.text)}>
+                    {formatNumber(drep.delegatorCount)}
+                  </div>
+                  <div className={cn('text-xs', theme.textSecondary)}>Delegators</div>
+                </div>
+              </div>
+              
+              {/* Focus Areas */}
+              <div className="flex flex-wrap gap-1 mb-4">
+                {drep.metadata.focusAreas.slice(0, 3).map((area) => (
+                  <span 
+                    key={area}
+                    className={cn(
+                      'px-2 py-1 rounded text-xs',
+                      'bg-primary/10 text-primary border border-primary/20'
+                    )}
+                  >
+                    {area}
+                  </span>
+                ))}
+                {drep.metadata.focusAreas.length > 3 && (
+                  <span className={cn('text-xs', theme.textSecondary)}>
+                    +{drep.metadata.focusAreas.length - 3} more
+                  </span>
+                )}
+              </div>
+              
+              {/* Performance Bar */}
+              <div className="mb-4">
+                <div className="flex justify-between text-xs mb-1">
+                  <span className={theme.textSecondary}>Participation Rate</span>
+                  <span className={theme.text}>{drep.performance.participationRate}%</span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div 
+                    className="bg-primary h-2 rounded-full transition-all duration-300" 
+                    style={{width: `${drep.performance.participationRate}%`}}
+                  />
+                </div>
+              </div>
+              
+              {/* Actions */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedDRep(drep);
+                  }}
+                  className="btn-outline flex-1 text-sm"
+                >
+                  View Details
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelegation(drep.id);
+                  }}
+                  className="btn-primary flex-1 text-sm"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    'Delegate'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const DRepListItem = ({ drep }: { drep: DRep }) => {
+      const isCurrentUser = drep.id === 'drep13g5w9xzdtkcqr4h8h';
+      const displayName = isCurrentUser ? currentUser.profile.name : `DRep ${drep.id.slice(0, 12)}...`;
+      const avatar = isCurrentUser ? currentUser.profile.avatar : `https://api.dicebear.com/7.x/avataaars/svg?seed=${drep.id}`;
+
+      return (
+        <div className={cn(
+          'p-4 rounded-lg border hover:shadow-md transition-all duration-200 cursor-pointer',
+          theme.cardBg, theme.border, 'hover:border-primary/50'
+        )}
+        onClick={() => setSelectedDRep(drep)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setSelectedDRep(drep);
+          }
+        }}
+        >
+          <div className="flex items-center gap-4">
+            <img 
+              src={avatar}
+              alt={`${displayName} avatar`}
+              className="w-12 h-12 rounded-full border border-primary/20"
+            />
+            
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className={cn('font-semibold truncate', theme.text)}>
+                  {displayName}
+                </h3>
+                <span className={cn(
+                  'px-2 py-1 rounded text-xs',
+                  drep.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                  'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+                )}>
+                  {drep.status}
+                </span>
+              </div>
+              <p className={cn('text-sm line-clamp-1', theme.textSecondary)}>
+                {drep.metadata.manifesto}
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-6 text-sm">
+              <div className="text-center">
+                <div className={cn('font-bold', theme.text)}>
+                  {formatADA(drep.votingPower, { compact: true })}
+                </div>
+                <div className={cn('text-xs', theme.textSecondary)}>Voting Power</div>
+              </div>
+              <div className="text-center">
+                <div className={cn('font-bold', theme.text)}>{drep.delegatorCount}</div>
+                <div className={cn('text-xs', theme.textSecondary)}>Delegators</div>
+              </div>
+              <div className="text-center">
+                <div className={cn('font-bold', theme.text)}>{drep.performance.participationRate}%</div>
+                <div className={cn('text-xs', theme.textSecondary)}>Participation</div>
+              </div>
+              <div className="text-center">
+                <div className={cn('font-bold', theme.text)}>⭐ {drep.performance.reputation}</div>
+                <div className={cn('text-xs', theme.textSecondary)}>Reputation</div>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedDRep(drep);
+                }}
+                className="btn-outline text-sm px-3 py-1"
+              >
+                View
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelegation(drep.id);
+                }}
+                className="btn-primary text-sm px-3 py-1"
+                disabled={isLoading}
+              >
+                Delegate
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    return (
+      <div className="p-6">
+        {/* Header */}
+        <div className="mb-6">
+          <h2 className={cn('text-2xl font-bold mb-2', theme.text)}>
+            DRep Directory
+          </h2>
+          <p className={cn('text-sm', theme.textSecondary)}>
+            Browse and delegate to Delegate Representatives (DReps) who will vote on your behalf in Cardano governance.
+          </p>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="mb-6">
+          <div className="flex flex-col lg:flex-row gap-4 mb-4">
+            {/* Search */}
+            <div className="relative flex-1">
+              <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search DReps by name, manifesto, or experience..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className={cn(
+                  'w-full pl-10 pr-4 py-3 rounded-lg border focus:ring-2 focus:ring-primary focus:border-primary',
+                  theme.cardBg, theme.border, theme.text,
+                  'placeholder:text-gray-400'
+                )}
+                aria-label="Search DReps"
+              />
+            </div>
+            
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={cn(
+                  'p-2 rounded-lg border',
+                  viewMode === 'grid' ? 'bg-primary text-primary-foreground' : cn(theme.cardBg, theme.border, theme.text),
+                  'hover:bg-muted transition-colors'
+                )}
+                aria-label="Grid view"
+              >
+                <LayoutGrid className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={cn(
+                  'p-2 rounded-lg border',
+                  viewMode === 'list' ? 'bg-primary text-primary-foreground' : cn(theme.cardBg, theme.border, theme.text),
+                  'hover:bg-muted transition-colors'
+                )}
+                aria-label="List view"
+              >
+                <List className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {/* Filters Toggle */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors',
+                showFilters ? 'bg-primary text-primary-foreground' : cn(theme.cardBg, theme.border, theme.text, 'hover:bg-muted')
+              )}
+            >
+              <Filter className="w-4 h-4" />
+              Filters
+              {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+          </div>
+
+          {/* Filter Panel */}
+          {showFilters && (
+            <div className={cn('p-4 rounded-lg border mb-4', theme.cardBg, theme.border)}>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Status Filter */}
+                <div>
+                  <label className={cn('block text-sm font-medium mb-2', theme.text)}>
+                    Status
+                  </label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className={cn(
+                      'w-full p-2 rounded-lg border',
+                      theme.cardBg, theme.border, theme.text
+                    )}
+                  >
+                    <option value="all">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="retired">Retired</option>
+                  </select>
+                </div>
+
+                {/* Focus Area Filter */}
+                <div>
+                  <label className={cn('block text-sm font-medium mb-2', theme.text)}>
+                    Focus Area
+                  </label>
+                  <select
+                    value={focusAreaFilter}
+                    onChange={(e) => setFocusAreaFilter(e.target.value)}
+                    className={cn(
+                      'w-full p-2 rounded-lg border',
+                      theme.cardBg, theme.border, theme.text
+                    )}
+                  >
+                    <option value="all">All Areas</option>
+                    <option value="technical">Technical</option>
+                    <option value="governance">Governance</option>
+                    <option value="community">Community</option>
+                    <option value="education">Education</option>
+                    <option value="security">Security</option>
+                    <option value="protocol">Protocol</option>
+                    <option value="treasury">Treasury</option>
+                    <option value="sustainability">Sustainability</option>
+                  </select>
+                </div>
+
+                {/* Sort By */}
+                <div>
+                  <label className={cn('block text-sm font-medium mb-2', theme.text)}>
+                    Sort By
+                  </label>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    className={cn(
+                      'w-full p-2 rounded-lg border',
+                      theme.cardBg, theme.border, theme.text
+                    )}
+                  >
+                    <option value="votingPower">Voting Power</option>
+                    <option value="delegatorCount">Delegator Count</option>
+                    <option value="participationRate">Participation Rate</option>
+                    <option value="reputation">Reputation</option>
+                  </select>
+                </div>
+
+                {/* Sort Order */}
+                <div>
+                  <label className={cn('block text-sm font-medium mb-2', theme.text)}>
+                    Order
+                  </label>
+                  <select
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                    className={cn(
+                      'w-full p-2 rounded-lg border',
+                      theme.cardBg, theme.border, theme.text
+                    )}
+                  >
+                    <option value="desc">Highest First</option>
+                    <option value="asc">Lowest First</option>
+                  </select>
+                </div>
+              </div>
+              
+              {/* Clear Filters */}
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setStatusFilter('all');
+                    setFocusAreaFilter('all');
+                    setSortBy('votingPower');
+                    setSortOrder('desc');
+                  }}
+                  className="btn-outline text-sm"
+                >
+                  Clear All Filters
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Results Summary */}
+        <div className="flex items-center justify-between mb-6">
+          <div className={cn('text-sm', theme.textSecondary)}>
+            Showing {filteredAndSortedDReps.length} of {mockDReps.length} DReps
+          </div>
+          
+          {/* Quick Stats */}
+          <div className="flex items-center gap-4 text-sm">
+            <div className={cn('flex items-center gap-1', theme.textSecondary)}>
+              <Users className="w-4 h-4" />
+              <span>{mockDReps.filter(d => d.status === 'active').length} Active</span>
+            </div>
+            <div className={cn('flex items-center gap-1', theme.textSecondary)}>
+              <TrendingUp className="w-4 h-4" />
+              <span>{formatADA(mockDReps.reduce((sum, d) => sum + d.votingPower, 0), { compact: true })} Total Power</span>
+            </div>
+          </div>
+        </div>
+
+        {/* DRep List */}
+        {filteredAndSortedDReps.length === 0 ? (
+          <div className={cn('text-center py-12', theme.cardBg, 'rounded-xl border', theme.border)}>
+            <Users className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+            <h3 className={cn('text-lg font-semibold mb-2', theme.text)}>
+              No DReps Found
+            </h3>
+            <p className={cn('text-sm', theme.textSecondary)}>
+              Try adjusting your search terms or filters to find DReps.
+            </p>
+          </div>
+        ) : (
+          <div className={
+            viewMode === 'grid' 
+              ? 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6'
+              : 'space-y-4'
+          }>
+            {filteredAndSortedDReps.map((drep) => (
+              viewMode === 'grid' 
+                ? <DRepCard key={drep.id} drep={drep} />
+                : <DRepListItem key={drep.id} drep={drep} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const ProposalDetail = ({ proposal, onBack }: { proposal: GovernanceAction; onBack: () => void }) => (
     <div className="p-6">
@@ -713,16 +1200,378 @@ export default function CardanoGovernancePlatform() {
     </div>
   );
 
-  const DRepDetail = ({ drep, onBack }: { drep: DRep; onBack: () => void }) => (
-    <div className="p-6">
-      <button onClick={onBack} className="btn-outline mb-4">
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back
-      </button>
-      <h3 className={cn('text-xl font-bold mb-6', theme.text)}>DRep: {drep.id}</h3>
-      <p className={theme.textSecondary}>DRep detail implementation...</p>
-    </div>
-  );
+  const DRepDetail = ({ drep, onBack }: { drep: DRep; onBack: () => void }) => {
+    const isCurrentUser = drep.id === 'drep13g5w9xzdtkcqr4h8h';
+    const displayName = isCurrentUser ? currentUser.profile.name : `DRep ${drep.id.slice(0, 12)}...`;
+    const avatar = isCurrentUser ? currentUser.profile.avatar : `https://api.dicebear.com/7.x/avataaars/svg?seed=${drep.id}`;
+    const userProfile = isCurrentUser ? currentUser.profile : null;
+
+    // Calculate additional metrics
+    const totalVotes = drep.performance.totalVotes;
+    const avgResponseHours = drep.performance.avgResponseTime;
+    const responseTimeText = avgResponseHours < 24 
+      ? `${avgResponseHours.toFixed(1)} hours`
+      : `${(avgResponseHours / 24).toFixed(1)} days`;
+
+    return (
+      <div className="p-6">
+        {/* Header with Back Button */}
+        <div className="flex items-center gap-4 mb-6">
+          <button 
+            onClick={onBack}
+            className={cn(
+              'p-2 rounded-lg border focus-visible-ring',
+              theme.cardBg, theme.border, theme.text,
+              'hover:bg-muted transition-colors'
+            )}
+            aria-label="Go back to DRep directory"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h2 className={cn('text-2xl font-bold', theme.text)}>
+            DRep Profile
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Profile Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Profile Header */}
+            <div className={cn('p-6 rounded-xl border', theme.cardBg, theme.border)}>
+              <div className="flex items-start gap-6 mb-6">
+                <div className="relative">
+                  <img 
+                    src={avatar}
+                    alt={`${displayName} avatar`}
+                    className="w-24 h-24 rounded-full border-4 border-primary/20"
+                  />
+                  {drep.status === 'active' && (
+                    <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 border-4 border-white dark:border-gray-900 rounded-full flex items-center justify-center">
+                      <CheckCircle className="w-4 h-4 text-white" />
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 mb-3">
+                    <h3 className={cn('text-2xl font-bold', theme.text)}>
+                      {displayName}
+                    </h3>
+                    <span className={cn(
+                      'px-3 py-1 rounded-full text-sm font-medium',
+                      drep.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                      'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+                    )}>
+                      {drep.status.charAt(0).toUpperCase() + drep.status.slice(1)}
+                    </span>
+                  </div>
+                  
+                  {userProfile && (
+                    <p className={cn('text-lg mb-4', theme.textSecondary)}>
+                      {userProfile.bio}
+                    </p>
+                  )}
+                  
+                  {/* Social Links */}
+                  {userProfile?.social && (
+                    <div className="flex items-center gap-4">
+                      {userProfile.social.twitter && (
+                        <a 
+                          href={userProfile.social.twitter}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 hover:text-blue-600 flex items-center gap-1 text-sm"
+                        >
+                          <Twitter className="w-4 h-4" />
+                          Twitter
+                        </a>
+                      )}
+                      {userProfile.website && (
+                        <a 
+                          href={userProfile.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 hover:text-blue-600 flex items-center gap-1 text-sm"
+                        >
+                          <Globe className="w-4 h-4" />
+                          Website
+                        </a>
+                      )}
+                      {userProfile.social.discord && (
+                        <span className={cn('flex items-center gap-1 text-sm', theme.textSecondary)}>
+                          <MessageCircle className="w-4 h-4" />
+                          {userProfile.social.discord}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Key Metrics */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className={cn('p-4 rounded-lg border text-center', theme.border)}>
+                  <div className={cn('text-2xl font-bold mb-1', theme.text)}>
+                    {formatADA(drep.votingPower, { compact: true })}
+                  </div>
+                  <div className={cn('text-sm', theme.textSecondary)}>Voting Power</div>
+                </div>
+                <div className={cn('p-4 rounded-lg border text-center', theme.border)}>
+                  <div className={cn('text-2xl font-bold mb-1', theme.text)}>
+                    {formatNumber(drep.delegatorCount)}
+                  </div>
+                  <div className={cn('text-sm', theme.textSecondary)}>Delegators</div>
+                </div>
+                <div className={cn('p-4 rounded-lg border text-center', theme.border)}>
+                  <div className={cn('text-2xl font-bold mb-1', theme.text)}>
+                    {drep.performance.participationRate}%
+                  </div>
+                  <div className={cn('text-sm', theme.textSecondary)}>Participation</div>
+                </div>
+                <div className={cn('p-4 rounded-lg border text-center', theme.border)}>
+                  <div className={cn('text-2xl font-bold mb-1', theme.text)}>
+                    ⭐ {drep.performance.reputation}
+                  </div>
+                  <div className={cn('text-sm', theme.textSecondary)}>Reputation</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Objectives & Manifesto */}
+            <div className={cn('p-6 rounded-xl border', theme.cardBg, theme.border)}>
+              <h4 className={cn('text-lg font-semibold mb-4', theme.text)}>
+                Objectives & Manifesto
+              </h4>
+              <p className={cn('leading-relaxed', theme.textSecondary)}>
+                {drep.metadata.manifesto}
+              </p>
+            </div>
+
+            {/* Experience & Qualifications */}
+            <div className={cn('p-6 rounded-xl border', theme.cardBg, theme.border)}>
+              <h4 className={cn('text-lg font-semibold mb-4', theme.text)}>
+                Experience & Qualifications
+              </h4>
+              <p className={cn('leading-relaxed', theme.textSecondary)}>
+                {drep.metadata.experience}
+              </p>
+            </div>
+
+            {/* Voting Philosophy */}
+            <div className={cn('p-6 rounded-xl border', theme.cardBg, theme.border)}>
+              <h4 className={cn('text-lg font-semibold mb-4', theme.text)}>
+                Voting Philosophy
+              </h4>
+              <p className={cn('leading-relaxed', theme.textSecondary)}>
+                {drep.metadata.votingPhilosophy}
+              </p>
+            </div>
+
+            {/* Focus Areas */}
+            <div className={cn('p-6 rounded-xl border', theme.cardBg, theme.border)}>
+              <h4 className={cn('text-lg font-semibold mb-4', theme.text)}>
+                Focus Areas
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {drep.metadata.focusAreas.map((area) => (
+                  <span 
+                    key={area}
+                    className={cn(
+                      'px-3 py-2 rounded-lg border',
+                      'bg-primary/10 text-primary border-primary/20'
+                    )}
+                  >
+                    {area.charAt(0).toUpperCase() + area.slice(1)}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Recent Voting History */}
+            <div className={cn('p-6 rounded-xl border', theme.cardBg, theme.border)}>
+              <h4 className={cn('text-lg font-semibold mb-4', theme.text)}>
+                Recent Voting History
+              </h4>
+              <div className="space-y-3">
+                {mockVotes
+                  .filter(vote => vote.voterId === drep.address)
+                  .slice(0, 3)
+                  .map((vote) => {
+                    const proposal = mockGovernanceActions.find(p => p.id === vote.proposalId);
+                    return (
+                      <div key={vote.id} className={cn('p-3 rounded-lg border', theme.border)}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className={cn('font-medium', theme.text)}>
+                            {proposal?.title}
+                          </span>
+                          <span className={getVoteStyles(vote.vote as any)}>
+                            {vote.vote.charAt(0).toUpperCase() + vote.vote.slice(1)}
+                          </span>
+                        </div>
+                        <p className={cn('text-sm mb-2', theme.textSecondary)}>
+                          {vote.rationale}
+                        </p>
+                        <p className={cn('text-xs', theme.textSecondary)}>
+                          {formatDate(vote.timestamp, { relative: true })}
+                        </p>
+                      </div>
+                    );
+                  })}
+                {mockVotes.filter(vote => vote.voterId === drep.address).length === 0 && (
+                  <p className={cn('text-sm', theme.textSecondary)}>
+                    No recent voting history available.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Delegation Card */}
+            <div className={cn('p-6 rounded-xl border', theme.cardBg, theme.border)}>
+              <h4 className={cn('text-lg font-semibold mb-4', theme.text)}>
+                Delegate to this DRep
+              </h4>
+              <p className={cn('text-sm mb-4', theme.textSecondary)}>
+                By delegating, you give this DRep the authority to vote on your behalf in governance actions.
+              </p>
+              <div className="space-y-3">
+                <button 
+                  onClick={() => handleDelegation(drep.id)}
+                  disabled={isLoading}
+                  className="btn-primary w-full"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Processing...
+                    </>
+                  ) : (
+                    'Delegate Now'
+                  )}
+                </button>
+                <button className="btn-outline w-full text-sm">
+                  Learn More About Delegation
+                </button>
+              </div>
+            </div>
+
+            {/* Performance Metrics */}
+            <div className={cn('p-6 rounded-xl border', theme.cardBg, theme.border)}>
+              <h4 className={cn('text-lg font-semibold mb-4', theme.text)}>
+                Performance Metrics
+              </h4>
+              <div className="space-y-4">
+                {/* Participation Rate */}
+                <div>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className={theme.textSecondary}>Participation Rate</span>
+                    <span className={theme.text}>{drep.performance.participationRate}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div 
+                      className="bg-primary h-2 rounded-full transition-all duration-300" 
+                      style={{width: `${drep.performance.participationRate}%`}}
+                    />
+                  </div>
+                </div>
+
+                {/* Response Time */}
+                <div className="flex justify-between">
+                  <span className={cn('text-sm', theme.textSecondary)}>Avg Response Time</span>
+                  <span className={cn('text-sm font-medium', theme.text)}>
+                    {responseTimeText}
+                  </span>
+                </div>
+
+                {/* Total Votes */}
+                <div className="flex justify-between">
+                  <span className={cn('text-sm', theme.textSecondary)}>Total Votes Cast</span>
+                  <span className={cn('text-sm font-medium', theme.text)}>
+                    {totalVotes}
+                  </span>
+                </div>
+
+                {/* Registration Date */}
+                <div className="flex justify-between">
+                  <span className={cn('text-sm', theme.textSecondary)}>Registered Since</span>
+                  <span className={cn('text-sm font-medium', theme.text)}>
+                    {formatDate(drep.registrationDate)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* DRep IDs */}
+            <div className={cn('p-6 rounded-xl border', theme.cardBg, theme.border)}>
+              <h4 className={cn('text-lg font-semibold mb-4', theme.text)}>
+                DRep IDs
+              </h4>
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={cn('text-sm', theme.textSecondary)}>DRep ID</span>
+                    <button
+                      onClick={() => copyToClipboard(drep.id)}
+                      className="text-primary hover:text-primary/80 text-sm"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className={cn('text-xs break-all font-mono p-2 rounded border', theme.text, theme.border)}>
+                    {drep.id}
+                  </p>
+                </div>
+                
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={cn('text-sm', theme.textSecondary)}>Cardano Address</span>
+                    <button
+                      onClick={() => copyToClipboard(drep.address)}
+                      className="text-primary hover:text-primary/80 text-sm"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className={cn('text-xs break-all font-mono p-2 rounded border', theme.text, theme.border)}>
+                    {drep.address}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Delegation Statistics */}
+            <div className={cn('p-6 rounded-xl border', theme.cardBg, theme.border)}>
+              <h4 className={cn('text-lg font-semibold mb-4', theme.text)}>
+                Delegation Statistics
+              </h4>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className={cn('text-sm', theme.textSecondary)}>Current Delegators</span>
+                  <span className={cn('text-sm font-bold', theme.text)}>
+                    {formatNumber(drep.delegatorCount)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className={cn('text-sm', theme.textSecondary)}>Total Delegated Stake</span>
+                  <span className={cn('text-sm font-bold', theme.text)}>
+                    {formatADA(drep.votingPower, { compact: true })}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className={cn('text-sm', theme.textSecondary)}>Network Share</span>
+                  <span className={cn('text-sm font-bold', theme.text)}>
+                    {((drep.votingPower / mockGovernanceStats.totalVotingPower) * 100).toFixed(2)}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const CreateProposal = () => (
     <div className="p-6">
