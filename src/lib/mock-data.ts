@@ -11,7 +11,7 @@ import {
   Delegation,
   SPO,
   ConstitutionalCouncil
-} from '@/types/governance';
+} from '../types/governance';
 
 // Mock Users
 export const mockUsers: User[] = [
@@ -286,6 +286,78 @@ export const mockGovernanceActions: GovernanceAction[] = [
       ccThreshold: 0.75
     },
     outcome: null
+  },
+  {
+    id: "prop_005",
+    proposerId: "addr1v37n26k8060aq7k8m3nfhpxzqvu39kdwj6p26rysc5fd3vgm5",
+    type: "treasury-withdrawal",
+    title: "Community Marketing Initiative - 50K ADA",
+    description: "Proposal to fund a comprehensive marketing campaign to increase Cardano awareness and adoption, focusing on developer outreach and educational content creation.",
+    rationale: "The Cardano ecosystem needs increased visibility to compete with other blockchain platforms. This initiative will create high-quality content, sponsor developer events, and engage with key communities to drive adoption.",
+    submissionTxHash: "tx5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t1u2v3w4x5y6z7a8b9c0d1",
+    submissionDate: new Date("2025-02-15"),
+    votingStartDate: new Date("2025-02-15"),
+    votingEndDate: new Date("2025-03-15"),
+    status: "expired",
+    metadata: {
+      category: "Treasury & Funding",
+      tags: ["marketing", "community", "outreach", "adoption"],
+      estimatedImpact: "medium",
+      technicalSpecs: {
+        totalAmount: 50000000000,
+        duration: "6 months",
+        milestones: 3,
+        reportingFrequency: "monthly"
+      },
+      budgetRequest: 50000000000
+    },
+    votes: {
+      drep: { yes: 8500000000000, no: 12200000000000, abstain: 1800000000000 },
+      spo: { yes: 24000000000000, no: 48000000000000, abstain: 5000000000000 },
+      constitutionalCouncil: { yes: 2, no: 3, abstain: 0 }
+    },
+    thresholds: {
+      drepThreshold: 0.60,
+      spoThreshold: 0.60,
+      ccThreshold: 0.67
+    },
+    outcome: "not-ratified",
+    finalizedAt: new Date("2025-03-16")
+  },
+  {
+    id: "prop_006",
+    proposerId: "addr1qxg5w9xzdtkcqr4h8hnnf8fqpnn6pgm5n8qpjgxnjey3",
+    type: "parameter-change",
+    title: "Reduce Transaction Fees by 20%",
+    description: "Proposal to reduce minimum transaction fees to make Cardano more competitive and accessible to users worldwide, particularly in regions with lower purchasing power.",
+    rationale: "Current transaction fees create barriers to adoption. This reduction will make micro-transactions more viable while still maintaining network security through sufficient validator incentives.",
+    submissionTxHash: "tx6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t1u2v3w4x5y6z7a8b9c0d1e2",
+    submissionDate: new Date("2025-01-20"),
+    votingStartDate: new Date("2025-01-20"),
+    votingEndDate: new Date("2025-02-20"),
+    status: "expired",
+    metadata: {
+      category: "Protocol Parameters",
+      tags: ["fees", "accessibility", "adoption", "economics"],
+      estimatedImpact: "high",
+      technicalSpecs: {
+        currentMinFee: "44 ADA",
+        proposedMinFee: "35.2 ADA",
+        reductionPercentage: "20%"
+      }
+    },
+    votes: {
+      drep: { yes: 20800000000000, no: 4200000000000, abstain: 1500000000000 },
+      spo: { yes: 72000000000000, no: 8000000000000, abstain: 3000000000000 },
+      constitutionalCouncil: { yes: 4, no: 0, abstain: 1 }
+    },
+    thresholds: {
+      drepThreshold: 0.51,
+      spoThreshold: 0.51,
+      ccThreshold: 0.67
+    },
+    outcome: "ratified",
+    finalizedAt: new Date("2025-02-21")
   }
 ];
 
