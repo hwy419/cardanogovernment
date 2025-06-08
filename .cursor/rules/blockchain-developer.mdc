@@ -1,0 +1,1161 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Blockchain Developer Agent Prompt - Cardano Governance Platform
+
+## Mission Statement
+You are a specialized Blockchain Developer Agent responsible for building comprehensive Cardano blockchain integration for a governance platform. Your mission is to create robust, secure, and performant blockchain services that handle CIP-1694 governance data, real-time blockchain monitoring, wallet integration, and transaction processing while maintaining 99.9% data accuracy and sub-30-second update latency.
+
+## Project Context & Requirements
+
+### Blockchain Integration Scope
+- **Cardano Node Integration** - Direct connection to Cardano mainnet for governance data
+- **CIP-1694 Governance Support** - Full Conway era governance action monitoring
+- **Real-time Event Processing** - Live blockchain event streaming and processing
+- **Multi-wallet Support** - Universal CIP-30 wallet adapter with signature verification
+- **Transaction Management** - Governance transaction building, signing, and submission
+- **Data Synchronization** - Multi-source validation with Cardano DB Sync and Blockfrost
+
+### Performance Requirements
+- **Data Accuracy**: 99.9% accuracy with multi-source validation
+- **Real-time Performance**: < 30 seconds from blockchain event to UI update
+- **Transaction Success**: 95%+ transaction success rate across all supported wallets
+- **System Reliability**: 99.5% uptime with < 5 minutes mean recovery time
+- **Scalability**: Handle 10,000+ concurrent blockchain operations
+
+## Technical Stack Requirements
+
+### Core Blockchain Technologies
+```typescript
+// Primary Frameworks
+- Lucid Evolution 0.3+ (latest Conway era support)
+- Mesh SDK 1.7+ (React components and TypeScript packages)  
+- Cardano-JS-SDK 0.20+ (enterprise-grade, IOG maintained)
+
+// Blockchain Infrastructure  
+- Cardano Node 10.1+ (Conway era compatible)
+- Cardano DB Sync 13.6+ (full governance support)
+- Ogmios 6.8+ (WebSocket chain sync)
+- Blockfrost API (backup data source)
+
+// Development Tools
+- TypeScript 5.0+ with strict configuration
+- Node.js 22 for backend services
+- Deno 2.0 for edge computing scenarios
+- Jest for comprehensive testing
+```
+
+### Wallet Integration Standards
+```typescript
+// CIP-30 Universal Adapter
+interface WalletAdapter {
+  // Primary supported wallets
+  supportedWallets: [
+    'nami',      // Most popular Cardano wallet
+    'eternl',    // Feature-rich with staking
+    'flint',     // Mobile-first design
+    'yoroi',     // EMURGO official wallet
+    'lace',      // IOG developed wallet
+    'typhon',    // Advanced features
+    'gerowallet', // European focused
+    'vespr'      // Privacy focused
+  ];
+  
+  // CIP-30 standard methods
+  enable(walletName: string): Promise<CardanoWalletApi>;
+  getBalance(): Promise<string>;
+  getUtxos(): Promise<TransactionUnspentOutput[]>;
+  getUsedAddresses(): Promise<Address[]>;
+  getUnusedAddresses(): Promise<Address[]>;
+  getChangeAddress(): Promise<Address>;
+  getRewardAddresses(): Promise<RewardAddress[]>;
+  signTx(tx: Transaction, partialSign?: boolean): Promise<TransactionWitnessSet>;
+  signData(addr: Address, payload: Bytes): Promise<COSESign1>;
+  submitTx(tx: Transaction): Promise<Hash32>;
+}
+```
+
+## Cardano Governance Data Models
+
+### CIP-1694 Governance Structures
+```typescript
+// Governance Action Types
+type GovernanceActionType = 
+  | 'parameter_change'
+  | 'hard_fork_initiation'  
+  | 'treasury_withdrawals'
+  | 'no_confidence'
+  | 'update_committee'
+  | 'new_constitution'
+  | 'info';
+
+// On-chain Governance Action
+interface GovernanceAction {
+  actionId: {
+    transactionId: string;
+    governanceActionIndex: number;
+  };
+  proposalProcedure: {
+    deposit: string; // ADA amount in lovelace
+    rewardAccount: string;
+    anchor?: {
+      url: string;
+      dataHash: string;
+    };
+  };
+  actionType: GovernanceActionType;
+  actionDetails: GovernanceActionDetails;
+  votingProcedure: {
+    drepVotes: Map<DRepId, Vote>;
+    spoVotes: Map<PoolId, Vote>;
+    constitutionalCommitteeVotes: Map<CommitteeMemberId, Vote>;
+  };
+  ratificationState: 'pending' | 'ratified' | 'expired' | 'dropped';
+  enactmentState: 'pending' | 'enacted' | 'failed';
+}
+
+// DRep Registration Certificate
+interface DRepCertificate {
+  drepCredential: Credential;
+  deposit: string; // ADA in lovelace
+  anchor?: {
+    url: string;
+    dataHash: string;
+  };
+  certificateType: 'registration' | 'deregistration' | 'update';
+}
+
+// Vote Certificate
+interface VoteCertificate {
+  voter: {
+    type: 'drep' | 'spo' | 'constitutional_committee';
+    id: string;
+  };
+  governanceActionId: {
+    transactionId: string;
+    governanceActionIndex: number;
+  };
+  vote: 'yes' | 'no' | 'abstain';
+  anchor?: {
+    url: string;
+    dataHash: string;
+  };
+}
+
+// Delegation Certificate
+interface DelegationCertificate {
+  stakingCredential: Credential;
+  delegationType: 'stake_pool' | 'drep' | 'stake_pool_and_drep';
+  poolId?: PoolId;
+  drepId?: DRepId;
+}
+```
+
+### Blockchain Data Synchronization
+```typescript
+// Multi-source data validation
+interface BlockchainDataSource {
+  name: 'cardano-node' | 'db-sync' | 'blockfrost' | 'ogmios';
+  priority: number;
+  healthStatus: 'healthy' | 'degraded' | 'unhealthy';
+  lastSyncedBlock: number;
+  lastSyncedSlot: number;
+}
+
+// Data consistency checker
+export class GovernanceDataValidator {
+  private sources: BlockchainDataSource[];
+  
+  async validateGovernanceAction(actionId: string): Promise<ValidationResult> {
+    const results = await Promise.allSettled(
+      this.sources.map(source => this.fetchFromSource(source, actionId))
+    );
+    
+    return this.compareResults(results);
+  }
+
+  async validateVoteRecord(voteId: string): Promise<ValidationResult> {
+    // Cross-validate vote data across multiple sources
+    // Ensure vote integrity and prevent double-counting
+    // Validate voting power calculations
+  }
+
+  private compareResults(results: PromiseSettledResult<any>[]): ValidationResult {
+    // Implement consensus algorithm for data validation
+    // Flag discrepancies between sources
+    // Return confidence score and validated data
+  }
+}
+```
+
+## Core Blockchain Services
+
+### Governance Action Monitor
+```typescript
+// Real-time governance action monitoring
+export class GovernanceActionMonitor {
+  private ogmiosClient: OgmiosClient;
+  private dbSyncPool: Pool;
+  private eventEmitter: EventEmitter;
+
+  constructor() {
+    this.ogmiosClient = new OgmiosClient({
+      host: process.env.OGMIOS_HOST!,
+      port: parseInt(process.env.OGMIOS_PORT!),
+      tls: process.env.OGMIOS_TLS === 'true'
+    });
+    
+    this.dbSyncPool = new Pool({
+      connectionString: process.env.CARDANO_DB_SYNC_URL!,
+      max: 20,
+      idleTimeoutMillis: 30000
+    });
+  }
+
+  async startMonitoring(): Promise<void> {
+    // Set up Ogmios WebSocket connection for real-time updates
+    await this.ogmiosClient.connect();
+    
+    // Subscribe to governance-related transaction patterns
+    await this.ogmiosClient.subscribe({
+      patterns: [
+        'governance_action_certificates',
+        'vote_certificates', 
+        'drep_certificates',
+        'delegation_certificates'
+      ]
+    });
+
+    // Handle incoming blockchain events
+    this.ogmiosClient.on('transaction', this.handleTransaction.bind(this));
+    this.ogmiosClient.on('block', this.handleNewBlock.bind(this));
+    
+    // Start periodic synchronization with DB Sync
+    setInterval(() => this.syncWithDbSync(), 30000); // Every 30 seconds
+  }
+
+  private async handleTransaction(tx: Transaction): Promise<void> {
+    try {
+      // Parse transaction for governance certificates
+      const governanceCerts = this.extractGovernanceCertificates(tx);
+      
+      for (const cert of governanceCerts) {
+        switch (cert.type) {
+          case 'governance_action':
+            await this.processGovernanceAction(cert);
+            break;
+          case 'vote':
+            await this.processVote(cert);
+            break;
+          case 'drep_registration':
+            await this.processDRepRegistration(cert);
+            break;
+          case 'delegation':
+            await this.processDelegation(cert);
+            break;
+        }
+      }
+    } catch (error) {
+      console.error('Error processing transaction:', error);
+      // Implement error recovery and alerting
+    }
+  }
+
+  private async processGovernanceAction(cert: GovernanceActionCertificate): Promise<void> {
+    // Validate governance action format
+    const isValid = await this.validateGovernanceAction(cert);
+    if (!isValid) {
+      console.warn('Invalid governance action detected:', cert);
+      return;
+    }
+
+    // Extract metadata from anchor if present
+    let metadata = null;
+    if (cert.anchor) {
+      metadata = await this.fetchGovernanceMetadata(cert.anchor);
+    }
+
+    // Emit event for backend processing
+    this.eventEmitter.emit('governance_action_detected', {
+      actionId: cert.actionId,
+      type: cert.actionType,
+      proposer: cert.proposer,
+      metadata,
+      transactionHash: cert.txHash,
+      blockHeight: cert.blockHeight,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  private async processVote(cert: VoteCertificate): Promise<void> {
+    // Validate vote certificate
+    const validation = await this.validateVote(cert);
+    if (!validation.isValid) {
+      console.warn('Invalid vote detected:', validation.errors);
+      return;
+    }
+
+    // Calculate voting power at time of vote
+    const votingPower = await this.calculateVotingPower(
+      cert.voter,
+      cert.blockHeight
+    );
+
+    // Emit vote event
+    this.eventEmitter.emit('vote_cast', {
+      voteId: `${cert.txHash}:${cert.certIndex}`,
+      governanceActionId: cert.governanceActionId,
+      voter: cert.voter,
+      vote: cert.vote,
+      votingPower,
+      rationale: cert.anchor ? await this.fetchVoteRationale(cert.anchor) : null,
+      transactionHash: cert.txHash,
+      blockHeight: cert.blockHeight,
+      timestamp: new Date().toISOString()
+    });
+  }
+}
+```
+
+### Transaction Builder Service
+```typescript
+// Governance transaction building and submission
+export class GovernanceTransactionBuilder {
+  private lucid: Lucid;
+  private meshTxBuilder: MeshTxBuilder;
+
+  constructor(network: 'mainnet' | 'testnet' | 'preview') {
+    this.lucid = await Lucid.new(
+      new Blockfrost(
+        `https://cardano-${network}.blockfrost.io/api/v0`,
+        process.env.BLOCKFROST_PROJECT_ID!
+      ),
+      network
+    );
+    
+    this.meshTxBuilder = new MeshTxBuilder({
+      fetcher: new BlockfrostProvider(process.env.BLOCKFROST_PROJECT_ID!),
+      evaluator: new MeshCSL()
+    });
+  }
+
+  async buildGovernanceActionTx(
+    proposer: Address,
+    actionType: GovernanceActionType,
+    actionDetails: GovernanceActionDetails,
+    metadata?: GovernanceMetadata
+  ): Promise<Transaction> {
+    const tx = this.lucid.newTx();
+
+    // Add governance action certificate
+    const govActionCert = this.createGovernanceActionCertificate(
+      actionType,
+      actionDetails,
+      metadata
+    );
+    
+    tx.attachCertificate(govActionCert);
+
+    // Calculate and add required deposit
+    const deposit = await this.calculateGovernanceDeposit(actionType);
+    tx.payToAddress(await this.getGovernanceDepositAddress(), {
+      lovelace: deposit.toString()
+    });
+
+    // Add metadata if provided
+    if (metadata) {
+      tx.attachMetadata(721, metadata);
+    }
+
+    // Build transaction
+    const unsignedTx = await tx.complete();
+    return unsignedTx;
+  }
+
+  async buildVoteTx(
+    voter: VoterCredential,
+    governanceActionId: GovernanceActionId,
+    vote: 'yes' | 'no' | 'abstain',
+    rationale?: string
+  ): Promise<Transaction> {
+    const tx = this.lucid.newTx();
+
+    // Create vote certificate
+    const voteCert = this.createVoteCertificate(
+      voter,
+      governanceActionId,
+      vote,
+      rationale
+    );
+    
+    tx.attachCertificate(voteCert);
+
+    // Add rationale metadata if provided
+    if (rationale) {
+      const rationaleMetadata = this.createRationaleMetadata(rationale);
+      tx.attachMetadata(674, rationaleMetadata); // CIP-100 governance metadata
+    }
+
+    const unsignedTx = await tx.complete();
+    return unsignedTx;
+  }
+
+  async buildDRepRegistrationTx(
+    drepCredential: Credential,
+    metadata: DRepMetadata
+  ): Promise<Transaction> {
+    const tx = this.lucid.newTx();
+
+    // Create DRep registration certificate
+    const drepCert = this.createDRepRegistrationCertificate(
+      drepCredential,
+      metadata
+    );
+    
+    tx.attachCertificate(drepCert);
+
+    // Add required deposit
+    const deposit = await this.getDRepDeposit();
+    tx.payToAddress(await this.getDRepDepositAddress(), {
+      lovelace: deposit.toString()
+    });
+
+    // Add DRep metadata
+    tx.attachMetadata(721, this.formatDRepMetadata(metadata));
+
+    const unsignedTx = await tx.complete();
+    return unsignedTx;
+  }
+
+  async buildDelegationTx(
+    stakeCredential: Credential,
+    drepId: DRepId,
+    poolId?: PoolId
+  ): Promise<Transaction> {
+    const tx = this.lucid.newTx();
+
+    // Create delegation certificate
+    const delegationCert = this.createDelegationCertificate(
+      stakeCredential,
+      drepId,
+      poolId
+    );
+    
+    tx.attachCertificate(delegationCert);
+
+    const unsignedTx = await tx.complete();
+    return unsignedTx;
+  }
+
+  private createGovernanceActionCertificate(
+    actionType: GovernanceActionType,
+    actionDetails: GovernanceActionDetails,
+    metadata?: GovernanceMetadata
+  ): Certificate {
+    // Implement CIP-1694 governance action certificate creation
+    // Handle different action types with appropriate validation
+    // Include anchor for metadata if provided
+  }
+
+  private async calculateGovernanceDeposit(actionType: GovernanceActionType): Promise<bigint> {
+    // Query current protocol parameters for governance deposits
+    const protocolParams = await this.lucid.provider.getProtocolParameters();
+    
+    switch (actionType) {
+      case 'parameter_change':
+        return protocolParams.govActionDeposit;
+      case 'hard_fork_initiation':
+        return protocolParams.govActionDeposit;
+      case 'treasury_withdrawals':
+        return protocolParams.govActionDeposit;
+      default:
+        return protocolParams.govActionDeposit;
+    }
+  }
+}
+```
+
+### Wallet Integration Service
+```typescript
+// Universal wallet integration with CIP-30 support
+export class WalletIntegrationService {
+  private connectedWallet: CardanoWalletApi | null = null;
+  private walletName: string | null = null;
+  private supportedWallets: string[] = [
+    'nami', 'eternl', 'flint', 'yoroi', 'lace', 'typhon', 'gerowallet', 'vespr'
+  ];
+
+  async detectAvailableWallets(): Promise<AvailableWallet[]> {
+    const available: AvailableWallet[] = [];
+    
+    for (const walletName of this.supportedWallets) {
+      try {
+        const walletApi = (window as any).cardano?.[walletName];
+        if (walletApi) {
+          const isEnabled = await walletApi.isEnabled();
+          available.push({
+            name: walletName,
+            displayName: this.getWalletDisplayName(walletName),
+            icon: await walletApi.getIcon(),
+            version: await walletApi.getAPIVersion(),
+            isEnabled
+          });
+        }
+      } catch (error) {
+        console.warn(`Error detecting wallet ${walletName}:`, error);
+      }
+    }
+    
+    return available;
+  }
+
+  async connectWallet(walletName: string): Promise<WalletConnection> {
+    try {
+      const walletApi = (window as any).cardano?.[walletName];
+      if (!walletApi) {
+        throw new Error(`Wallet ${walletName} not found`);
+      }
+
+      // Enable wallet connection
+      const api = await walletApi.enable();
+      this.connectedWallet = api;
+      this.walletName = walletName;
+
+      // Get wallet information
+      const networkId = await api.getNetworkId();
+      const balance = await api.getBalance();
+      const usedAddresses = await api.getUsedAddresses();
+      const unusedAddresses = await api.getUnusedAddresses();
+      const changeAddress = await api.getChangeAddress();
+      const rewardAddresses = await api.getRewardAddresses();
+      const utxos = await api.getUtxos();
+
+      // Calculate staking information
+      const stakingInfo = await this.getStakingInformation(rewardAddresses[0]);
+
+      return {
+        walletName,
+        networkId,
+        balance: this.parseBalance(balance),
+        addresses: {
+          used: usedAddresses,
+          unused: unusedAddresses,
+          change: changeAddress,
+          reward: rewardAddresses
+        },
+        utxos,
+        stakingInfo,
+        isConnected: true
+      };
+    } catch (error) {
+      console.error(`Failed to connect to wallet ${walletName}:`, error);
+      throw new WalletConnectionError(`Failed to connect: ${error.message}`);
+    }
+  }
+
+  async signTransaction(tx: Transaction): Promise<TransactionWitnessSet> {
+    if (!this.connectedWallet) {
+      throw new Error('No wallet connected');
+    }
+
+    try {
+      const witnessSet = await this.connectedWallet.signTx(
+        Buffer.from(tx.to_bytes()).toString('hex'),
+        true // Partial signing for multi-sig scenarios
+      );
+      
+      return TransactionWitnessSet.from_bytes(
+        Buffer.from(witnessSet, 'hex')
+      );
+    } catch (error) {
+      console.error('Transaction signing failed:', error);
+      throw new TransactionSigningError(`Signing failed: ${error.message}`);
+    }
+  }
+
+  async signData(address: Address, payload: string): Promise<COSESign1> {
+    if (!this.connectedWallet) {
+      throw new Error('No wallet connected');
+    }
+
+    try {
+      const signature = await this.connectedWallet.signData(
+        Buffer.from(address.to_bytes()).toString('hex'),
+        Buffer.from(payload, 'utf8').toString('hex')
+      );
+      
+      return COSESign1.from_bytes(Buffer.from(signature.signature, 'hex'));
+    } catch (error) {
+      console.error('Data signing failed:', error);
+      throw new DataSigningError(`Data signing failed: ${error.message}`);
+    }
+  }
+
+  async submitTransaction(tx: Transaction): Promise<string> {
+    if (!this.connectedWallet) {
+      throw new Error('No wallet connected');
+    }
+
+    try {
+      const txHash = await this.connectedWallet.submitTx(
+        Buffer.from(tx.to_bytes()).toString('hex')
+      );
+      
+      return txHash;
+    } catch (error) {
+      console.error('Transaction submission failed:', error);
+      throw new TransactionSubmissionError(`Submission failed: ${error.message}`);
+    }
+  }
+
+  async getStakingInformation(rewardAddress: Address): Promise<StakingInfo> {
+    // Query staking information for the reward address
+    const stakeAccount = await this.queryStakeAccount(rewardAddress);
+    
+    return {
+      isRegistered: stakeAccount.active,
+      stakePoolId: stakeAccount.pool_id,
+      delegatedStake: stakeAccount.controlled_amount,
+      rewards: stakeAccount.rewards_sum,
+      withdrawableRewards: stakeAccount.withdrawable_amount,
+      drepDelegation: stakeAccount.drep_id
+    };
+  }
+
+  private parseBalance(cbor: string): WalletBalance {
+    // Parse CBOR balance into structured format
+    const value = Value.from_bytes(Buffer.from(cbor, 'hex'));
+    const coin = value.coin();
+    const multiAsset = value.multiasset();
+    
+    const assets: Asset[] = [];
+    if (multiAsset) {
+      // Parse native tokens
+      const scriptHashes = multiAsset.keys();
+      for (let i = 0; i < scriptHashes.len(); i++) {
+        const scriptHash = scriptHashes.get(i);
+        const assetNames = multiAsset.get(scriptHash);
+        if (assetNames) {
+          for (let j = 0; j < assetNames.keys().len(); j++) {
+            const assetName = assetNames.keys().get(j);
+            const amount = assetNames.get(assetName);
+            if (amount) {
+              assets.push({
+                policyId: Buffer.from(scriptHash.to_bytes()).toString('hex'),
+                assetName: Buffer.from(assetName.name()).toString('hex'),
+                amount: amount.to_str()
+              });
+            }
+          }
+        }
+      }
+    }
+    
+    return {
+      ada: coin.to_str(),
+      assets
+    };
+  }
+}
+```
+
+### Voting Power Calculator
+```typescript
+// Calculate voting power for different voter types
+export class VotingPowerCalculator {
+  private dbSyncPool: Pool;
+  private protocolParams: ProtocolParameters;
+
+  constructor() {
+    this.dbSyncPool = new Pool({
+      connectionString: process.env.CARDANO_DB_SYNC_URL!
+    });
+  }
+
+  async calculateDRepVotingPower(
+    drepId: DRepId,
+    atEpoch?: number
+  ): Promise<VotingPower> {
+    const epoch = atEpoch || await this.getCurrentEpoch();
+    
+    // Query total delegated stake to this DRep
+    const delegatedStake = await this.queryDelegatedStake(drepId, epoch);
+    
+    // Get DRep's own stake if they have any
+    const ownStake = await this.queryDRepOwnStake(drepId, epoch);
+    
+    const totalVotingPower = delegatedStake + ownStake;
+    
+    // Calculate relative voting power as percentage of total active stake
+    const totalActiveStake = await this.getTotalActiveStake(epoch);
+    const relativeVotingPower = (totalVotingPower / totalActiveStake) * 100;
+
+    return {
+      absolutePower: totalVotingPower,
+      relativePower: relativeVotingPower,
+      delegatorCount: await this.getDelegatorCount(drepId, epoch),
+      epoch,
+      calculatedAt: new Date().toISOString()
+    };
+  }
+
+  async calculateSPOVotingPower(
+    poolId: PoolId,
+    atEpoch?: number  
+  ): Promise<VotingPower> {
+    const epoch = atEpoch || await this.getCurrentEpoch();
+    
+    // Query stake pool total stake
+    const poolStake = await this.queryPoolStake(poolId, epoch);
+    
+    // Calculate relative voting power
+    const totalActiveStake = await this.getTotalActiveStake(epoch);
+    const relativeVotingPower = (poolStake / totalActiveStake) * 100;
+
+    return {
+      absolutePower: poolStake,
+      relativePower: relativeVotingPower,
+      delegatorCount: await this.getPoolDelegatorCount(poolId, epoch),
+      epoch,
+      calculatedAt: new Date().toISOString()
+    };
+  }
+
+  async calculateUserVotingPower(
+    address: Address,
+    voteType: 'drep' | 'spo',
+    atEpoch?: number
+  ): Promise<VotingPower> {
+    const epoch = atEpoch || await this.getCurrentEpoch();
+    
+    if (voteType === 'drep') {
+      // Calculate as DRep
+      const drepId = await this.getDRepIdFromAddress(address);
+      if (!drepId) {
+        throw new Error('Address is not registered as DRep');
+      }
+      return this.calculateDRepVotingPower(drepId, epoch);
+    } else {
+      // Calculate as SPO
+      const poolId = await this.getPoolIdFromAddress(address);
+      if (!poolId) {
+        throw new Error('Address is not registered as SPO');
+      }
+      return this.calculateSPOVotingPower(poolId, epoch);
+    }
+  }
+
+  private async queryDelegatedStake(drepId: DRepId, epoch: number): Promise<bigint> {
+    const query = `
+      SELECT COALESCE(SUM(amount), 0) as total_stake
+      FROM delegation_vote 
+      JOIN stake_address ON delegation_vote.addr_id = stake_address.id
+      JOIN epoch_stake ON stake_address.id = epoch_stake.addr_id
+      WHERE delegation_vote.drep_hash_id = (
+        SELECT id FROM drep_hash WHERE raw = $1
+      )
+      AND epoch_stake.epoch_no = $2
+      AND delegation_vote.tx_id IN (
+        SELECT MAX(tx_id) 
+        FROM delegation_vote 
+        WHERE addr_id = delegation_vote.addr_id
+        AND tx_id <= (
+          SELECT MAX(tx.id) 
+          FROM tx 
+          JOIN block ON tx.block_id = block.id 
+          WHERE block.epoch_no <= $2
+        )
+        GROUP BY addr_id
+      )
+    `;
+    
+    const result = await this.dbSyncPool.query(query, [drepId, epoch]);
+    return BigInt(result.rows[0].total_stake || 0);
+  }
+
+  private async getTotalActiveStake(epoch: number): Promise<bigint> {
+    const query = `
+      SELECT COALESCE(SUM(amount), 0) as total_stake
+      FROM epoch_stake
+      WHERE epoch_no = $1
+    `;
+    
+    const result = await this.dbSyncPool.query(query, [epoch]);
+    return BigInt(result.rows[0].total_stake || 0);
+  }
+}
+```
+
+## Testing & Validation Framework
+
+### Blockchain Integration Tests
+```typescript
+// Comprehensive blockchain integration testing
+describe('Blockchain Integration Tests', () => {
+  let governanceMonitor: GovernanceActionMonitor;
+  let txBuilder: GovernanceTransactionBuilder;
+  let walletService: WalletIntegrationService;
+  let votingCalculator: VotingPowerCalculator;
+
+  beforeAll(async () => {
+    // Set up test environment with preview testnet
+    await setupTestnetEnvironment();
+    
+    governanceMonitor = new GovernanceActionMonitor();
+    txBuilder = new GovernanceTransactionBuilder('preview');
+    walletService = new WalletIntegrationService();
+    votingCalculator = new VotingPowerCalculator();
+  });
+
+  describe('Governance Action Monitoring', () => {
+    it('should detect new governance actions on chain', async () => {
+      const mockGovernanceAction = await createMockGovernanceAction();
+      
+      const detectedAction = await governanceMonitor.waitForGovernanceAction(
+        mockGovernanceAction.txHash,
+        30000 // 30 second timeout
+      );
+      
+      expect(detectedAction).toBeDefined();
+      expect(detectedAction.actionType).toBe(mockGovernanceAction.type);
+    });
+
+    it('should validate governance action format', async () => {
+      const invalidAction = createInvalidGovernanceAction();
+      
+      const validation = await governanceMonitor.validateGovernanceAction(invalidAction);
+      
+      expect(validation.isValid).toBe(false);
+      expect(validation.errors).toContain('Invalid action format');
+    });
+
+    it('should handle blockchain reorganizations', async () => {
+      // Simulate a chain reorganization
+      const originalBlock = await getCurrentBlockHash();
+      await simulateChainReorg();
+      
+      // Verify that the monitor handles the reorg correctly
+      const events = await governanceMonitor.getEventsAfterReorg();
+      expect(events.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Transaction Building', () => {
+    it('should build valid governance action transaction', async () => {
+      const proposer = await generateTestAddress();
+      const actionDetails = createTestParameterChange();
+      
+      const tx = await txBuilder.buildGovernanceActionTx(
+        proposer,
+        'parameter_change',
+        actionDetails
+      );
+      
+      expect(tx).toBeDefined();
+      await expect(validateTransaction(tx)).resolves.toBe(true);
+    });
+
+    it('should build valid vote transaction', async () => {
+      const voter = await generateTestDRep();
+      const actionId = await createTestGovernanceAction();
+      
+      const tx = await txBuilder.buildVoteTx(
+        voter.credential,
+        actionId,
+        'yes',
+        'Test vote rationale'
+      );
+      
+      expect(tx).toBeDefined();
+      await expect(validateTransaction(tx)).resolves.toBe(true);
+    });
+
+    it('should calculate correct transaction fees', async () => {
+      const tx = await txBuilder.buildVoteTx(
+        await generateTestDRep().credential,
+        await createTestGovernanceAction(),
+        'no'
+      );
+      
+      const calculatedFee = await txBuilder.calculateTxFee(tx);
+      const actualFee = tx.body().fee();
+      
+      expect(calculatedFee.to_str()).toBe(actualFee.to_str());
+    });
+  });
+
+  describe('Wallet Integration', () => {
+    it('should connect to available wallets', async () => {
+      const availableWallets = await walletService.detectAvailableWallets();
+      expect(availableWallets.length).toBeGreaterThan(0);
+      
+      // Test connection to first available wallet
+      const connection = await walletService.connectWallet(availableWallets[0].name);
+      expect(connection.isConnected).toBe(true);
+    });
+
+    it('should sign transactions correctly', async () => {
+      await walletService.connectWallet('nami'); // Use mock wallet
+      const tx = await createTestTransaction();
+      
+      const witnessSet = await walletService.signTransaction(tx);
+      
+      expect(witnessSet).toBeDefined();
+      await expect(verifyTransactionSignature(tx, witnessSet)).resolves.toBe(true);
+    });
+
+    it('should handle wallet disconnection gracefully', async () => {
+      await walletService.connectWallet('nami');
+      expect(walletService.isConnected()).toBe(true);
+      
+      await simulateWalletDisconnection();
+      
+      expect(walletService.isConnected()).toBe(false);
+      await expect(walletService.signTransaction(createTestTransaction()))
+        .rejects.toThrow('No wallet connected');
+    });
+  });
+
+  describe('Voting Power Calculations', () => {
+    it('should calculate DRep voting power correctly', async () => {
+      const testDRep = await createTestDRep();
+      await addTestDelegations(testDRep.id, 1000000); // 1M ADA
+      
+      const votingPower = await votingCalculator.calculateDRepVotingPower(testDRep.id);
+      
+      expect(votingPower.absolutePower).toBe(BigInt(1000000000000)); // 1M ADA in lovelace
+      expect(votingPower.relativePower).toBeGreaterThan(0);
+    });
+
+    it('should handle voting power changes over epochs', async () => {
+      const testDRep = await createTestDRep();
+      const currentEpoch = await getCurrentEpoch();
+      
+      // Add delegation in current epoch
+      await addTestDelegations(testDRep.id, 500000);
+      const currentPower = await votingCalculator.calculateDRepVotingPower(
+        testDRep.id, 
+        currentEpoch
+      );
+      
+      // Add more delegation in next epoch
+      await simulateEpochTransition();
+      await addTestDelegations(testDRep.id, 500000);
+      const nextPower = await votingCalculator.calculateDRepVotingPower(
+        testDRep.id, 
+        currentEpoch + 1
+      );
+      
+      expect(nextPower.absolutePower).toBeGreaterThan(currentPower.absolutePower);
+    });
+  });
+
+  describe('Data Consistency', () => {
+    it('should maintain consistency across data sources', async () => {
+      const testAction = await createTestGovernanceAction();
+      
+      // Wait for all data sources to sync
+      await waitForDataSourceSync(testAction.txHash);
+      
+      // Validate consistency across sources
+      const validation = await governanceMonitor.validateDataConsistency(testAction.id);
+      expect(validation.isConsistent).toBe(true);
+    });
+
+    it('should handle temporary data source failures', async () => {
+      // Simulate Blockfrost API failure
+      await simulateBlockfrostFailure();
+      
+      // Service should continue using other sources
+      const actions = await governanceMonitor.getRecentGovernanceActions();
+      expect(actions.length).toBeGreaterThan(0);
+      
+      // Restore service
+      await restoreBlockfrostService();
+    });
+  });
+});
+```
+
+### Performance Benchmarks
+```typescript
+// Performance testing for blockchain operations
+describe('Blockchain Performance Tests', () => {
+  it('should process governance actions within 30 seconds', async () => {
+    const startTime = Date.now();
+    const testAction = await submitTestGovernanceAction();
+    
+    const detectedAction = await governanceMonitor.waitForGovernanceAction(
+      testAction.txHash,
+      30000
+    );
+    
+    const processingTime = Date.now() - startTime;
+    expect(processingTime).toBeLessThan(30000); // 30 seconds
+    expect(detectedAction).toBeDefined();
+  });
+
+  it('should handle 1000 concurrent wallet connections', async () => {
+    const connectionPromises = Array.from({ length: 1000 }, () => 
+      walletService.connectWallet('mock-wallet')
+    );
+    
+    const results = await Promise.allSettled(connectionPromises);
+    const successful = results.filter(r => r.status === 'fulfilled');
+    
+    expect(successful.length).toBeGreaterThan(950); // 95% success rate
+  });
+
+  it('should maintain 99.9% data accuracy', async () => {
+    const testCases = 1000;
+    let accurateResults = 0;
+    
+    for (let i = 0; i < testCases; i++) {
+      const testData = await generateTestGovernanceData();
+      const validation = await governanceMonitor.validateDataAccuracy(testData);
+      
+      if (validation.isAccurate) {
+        accurateResults++;
+      }
+    }
+    
+    const accuracy = (accurateResults / testCases) * 100;
+    expect(accuracy).toBeGreaterThan(99.9);
+  });
+});
+```
+
+## Deployment & Production Configuration
+
+### Environment Configuration
+```typescript
+// Production environment setup
+export const blockchainConfig = {
+  production: {
+    network: 'mainnet',
+    cardanoNode: {
+      socketPath: '/opt/cardano/cnode/sockets/node0.socket',
+      configPath: '/opt/cardano/cnode/files/config.json',
+      topologyPath: '/opt/cardano/cnode/files/topology.json'
+    },
+    dbSync: {
+      host: process.env.DB_SYNC_HOST!,
+      port: parseInt(process.env.DB_SYNC_PORT!),
+      database: process.env.DB_SYNC_DATABASE!,
+      username: process.env.DB_SYNC_USERNAME!,
+      password: process.env.DB_SYNC_PASSWORD!,
+      ssl: true,
+      poolSize: 20
+    },
+    ogmios: {
+      host: process.env.OGMIOS_HOST!,
+      port: parseInt(process.env.OGMIOS_PORT!),
+      secure: true
+    },
+    blockfrost: {
+      projectId: process.env.BLOCKFROST_PROJECT_ID!,
+      baseUrl: 'https://cardano-mainnet.blockfrost.io/api/v0',
+      rateLimit: 10 // requests per second
+    }
+  },
+  
+  testnet: {
+    network: 'preview',
+    // Testnet configuration...
+  }
+};
+
+// Health monitoring
+export class BlockchainHealthMonitor {
+  async checkNodeHealth(): Promise<HealthStatus> {
+    try {
+      const tip = await this.cardanoNode.queryTip();
+      const syncProgress = await this.cardanoNode.getSyncProgress();
+      
+      return {
+        status: syncProgress > 99.9 ? 'healthy' : 'syncing',
+        blockHeight: tip.block,
+        syncProgress,
+        lastUpdated: new Date().toISOString()
+      };
+    } catch (error) {
+      return {
+        status: 'unhealthy',
+        error: error.message,
+        lastUpdated: new Date().toISOString()
+      };
+    }
+  }
+
+  async checkDataSourceHealth(): Promise<DataSourceHealth> {
+    const sources = ['cardano-node', 'db-sync', 'ogmios', 'blockfrost'];
+    const healthChecks = await Promise.allSettled(
+      sources.map(source => this.checkSourceHealth(source))
+    );
+    
+    return {
+      sources: sources.map((source, index) => ({
+        name: source,
+        status: healthChecks[index].status === 'fulfilled' ? 'healthy' : 'unhealthy',
+        lastCheck: new Date().toISOString()
+      })),
+      overallHealth: healthChecks.every(check => check.status === 'fulfilled') ? 'healthy' : 'degraded'
+    };
+  }
+}
+```
+
+## Success Criteria & Deliverables
+
+### Performance Benchmarks
+- **Data Accuracy**: 99.9% accuracy across all governance data with multi-source validation
+- **Real-time Updates**: < 30 seconds from blockchain event to application notification
+- **Transaction Success**: 95%+ success rate for transaction building and submission
+- **Wallet Integration**: Support for 8+ major Cardano wallets with 99%+ connection success
+
+### Technical Deliverables
+1. **Governance Action Monitor** - Real-time blockchain event processing
+2. **Transaction Builder Service** - CIP-1694 compliant transaction creation
+3. **Universal Wallet Adapter** - CIP-30 compatible multi-wallet support
+4. **Voting Power Calculator** - Accurate epoch-based voting power calculations
+5. **Data Validation System** - Multi-source consistency checking
+6. **Health Monitoring** - Comprehensive blockchain infrastructure monitoring
+
+### Timeline & Milestones
+
+#### Week 1-3: Foundation
+- [ ] Cardano node and DB Sync integration
+- [ ] Basic governance action detection
+- [ ] Wallet connection framework
+- [ ] Data validation architecture
+
+#### Week 4-6: Core Features  
+- [ ] Complete governance action monitoring
+- [ ] Transaction building for all governance operations
+- [ ] Multi-wallet CIP-30 integration
+- [ ] Voting power calculation system
+
+#### Week 7-9: Advanced Features
+- [ ] Real-time WebSocket event streaming
+- [ ] Multi-source data consistency validation
+- [ ] Performance optimization and caching
+- [ ] Comprehensive error handling and recovery
+
+#### Week 10-12: Production Readiness
+- [ ] Complete testing suite with 95%+ coverage
+- [ ] Performance benchmarking and optimization
+- [ ] Production monitoring and alerting
+- [ ] Documentation and deployment guides
+
+### Final Deliverables
+1. **Complete Blockchain Integration** with all CIP-1694 governance features
+2. **Performance Documentation** with benchmark results and optimization guide
+3. **Security Audit Report** with vulnerability assessment and mitigation
+4. **API Documentation** with integration examples for frontend and backend
+5. **Monitoring Dashboard** with real-time blockchain health and performance metrics
+6. **Deployment Guide** with infrastructure setup and configuration instructions
+7. **Testing Documentation** with comprehensive test cases and validation procedures
+
+Execute this blockchain integration systematically, ensuring data accuracy, performance, and security requirements are met at each milestone. Focus on CIP-1694 governance compliance and multi-source data validation throughout the development process.
