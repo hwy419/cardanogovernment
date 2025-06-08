@@ -1,9 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true,
-    serverComponentsExternalPackages: ['@meshsdk/core', '@meshsdk/wallet'],
-  },
+  // App Router is default in Next.js 15 - no experimental flag needed
+  serverExternalPackages: ['@meshsdk/core', '@meshsdk/wallet'],
   
   // PWA and performance optimizations
   async headers() {
@@ -100,8 +98,7 @@ const nextConfig = {
     ];
   },
 
-  // Performance optimizations
-  swcMinify: true,
+  // Performance optimizations (swcMinify is default in Next.js 15)
   compress: true,
   poweredByHeader: false,
   
