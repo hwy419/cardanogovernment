@@ -1,192 +1,304 @@
 # Cardano Governance Platform
 
-A comprehensive governance platform for the Cardano blockchain ecosystem that enables participants to view, create, and vote on governance actions while facilitating delegation relationships between stakeholders and Delegate Representatives (DReps).
+A comprehensive, accessible blockchain governance platform built for the Cardano ecosystem. This platform enables DReps, delegators, proposers, and participants to engage with on-chain governance through an intuitive, WCAG 2.2 AA compliant interface.
 
-## 🎯 Project Overview
+## � Features
 
-This platform serves as the central hub for Cardano's governance ecosystem, supporting all four primary user types:
+### Core Functionality
+- **Governance Action Browser** - Browse active/past proposals with advanced filtering and search
+- **DRep Directory** - Searchable directory with performance metrics and detailed profiles
+- **Voting Interface** - Secure wallet-connected voting with transaction previews
+- **Delegation Management** - Delegate stake to DReps with clear consequence explanations
+- **Proposal Creation** - Structured forms for creating different types of governance proposals
+- **Real-time Updates** - Live updates on voting progress and governance state changes
 
-- **🏛️ Ecosystem Participants** - View governance actions and stay informed about network decisions
-- **🗳️ DReps (Delegate Representatives)** - Review and vote on governance proposals with transparency
-- **🤝 Delegators** - Find and delegate to DReps whose values align with theirs
-- **📝 Proposers** - Create and submit governance proposals to the community
+### User Types Supported
+1. **Cardano Ecosystem Participants** - View governance actions, register as DReps, track voting history
+2. **DReps (Delegate Representatives)** - Vote on proposals, manage delegations, maintain public profiles
+3. **Delegators** - Browse and delegate to DReps, monitor delegation status
+4. **Proposers** - Create and submit governance proposals, track proposal lifecycle
 
-## ✨ Key Features
+### Accessibility & Performance
+- **WCAG 2.2 AA Compliance** - Full accessibility support with screen reader compatibility
+- **Core Web Vitals Optimized** - LCP < 2.5s, FID < 100ms, CLS < 0.1
+- **Mobile-First Design** - Responsive across all device sizes
+- **Dark/Light Mode** - Automatic theme detection with manual override
+- **Keyboard Navigation** - Complete keyboard accessibility throughout the platform
 
-### Governance Action Management
-- **Comprehensive Proposal Viewer** - Browse all active and historical governance actions
-- **Real-time Vote Tracking** - Live updates on proposal progression and vote counts
-- **Advanced Filtering & Search** - Find specific proposals by category, status, or keywords
-- **Detailed Analytics** - Interactive charts and governance insights
-
-### DRep & Delegation System
-- **DRep Directory** - Searchable directory with performance metrics and profiles
-- **Seamless Delegation** - One-click delegation through wallet integration
-- **Performance Tracking** - Monitor DRep voting history and participation rates
-- **Delegation Analytics** - Track delegation changes and voting power distribution
-
-### Wallet Integration
-- **Multi-Wallet Support** - Compatible with Nami, Eternl, Flint, Yoroi, and more
-- **Secure Authentication** - Wallet-based authentication with signature verification
-- **Transaction Management** - Streamlined voting and delegation transactions
-- **Real-time Balance Updates** - Live stake and voting power calculations
-
-### Proposal Creation
-- **Structured Proposal Forms** - Templates for different governance action types
-- **Draft Management** - Save and edit proposals before submission
-- **Preview Mode** - Review proposals before blockchain submission
-- **Submission Tracking** - Monitor proposal status throughout the governance process
-
-## 🏗️ Technology Stack
+## 🛠 Technology Stack
 
 ### Frontend
-- **Framework**: Next.js 15 with React 19 Server Components
-- **Language**: TypeScript 5.0+
-- **Styling**: Tailwind CSS with shadcn/ui components
-- **State Management**: Zustand + TanStack Query
-- **Wallet Integration**: Mesh SDK with CIP-30 compliance
+- **Next.js 15** with App Router and React 19 Server Components
+- **TypeScript 5.0+** for enhanced maintainability and developer experience
+- **Tailwind CSS** with custom design system and accessibility utilities
+- **shadcn/ui + Radix UI** for component library with built-in accessibility
+- **Zustand** for global state management with TanStack Query for server state
 
-### Backend (AWS Serverless)
-- **API**: AWS API Gateway with Lambda functions
-- **Database**: DynamoDB with single-table design
-- **Authentication**: AWS Cognito + wallet signature verification
-- **Real-time**: WebSocket API with EventBridge
-- **Storage**: S3 for proposal documents and metadata
+### Cardano Integration
+- **@meshsdk/react** for wallet connections and CIP-30 compliance
+- **Multi-wallet Support** - Nami, Eternl, Flint, Yoroi, and more
+- **Real-time Blockchain Data** - Live governance action monitoring
+- **Signature Verification** - Secure wallet-based authentication
 
-### Blockchain Integration
-- **Primary SDK**: Lucid Evolution with Plutus V3 support
-- **Data Indexing**: Cardano DB Sync 13.6+ with full governance support
-- **Real-time Events**: Ogmios WebSocket for live blockchain updates
-- **Multi-source Validation**: Blockfrost API integration for data consistency
+### Performance & Accessibility
+- **Core Web Vitals Optimization** - Lighthouse score 95+ desktop, 90+ mobile
+- **Accessibility-First Design** - Screen reader support, keyboard navigation
+- **Progressive Web App** capabilities with offline functionality
+- **Advanced Caching** strategies for optimal performance
 
-## 🚀 Getting Started
+## � Prerequisites
 
-### Prerequisites
-- Node.js 22+ with npm/yarn
-- AWS CLI configured with appropriate permissions
-- Cardano wallet (Nami, Eternl, Flint, or Yoroi)
-- Access to Cardano testnet/mainnet
+- **Node.js** 18.0.0 or higher
+- **npm** 9.0.0 or higher (or **yarn** 1.22.0+)
+- **Git** for version control
 
-### Installation
+## 🚀 Quick Start
+
+### 1. Clone the Repository
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-username/cardanogovernment.git
-cd cardanogovernment
-
-# Install dependencies
-npm install
-
-# Set up environment variables
-cp .env.example .env.local
-# Edit .env.local with your configuration
-
-# Start development server
-npm run dev
+git clone https://github.com/your-org/cardano-governance-platform.git
+cd cardano-governance-platform
 ```
 
-### Environment Configuration
+### 2. Install Dependencies
+
+```bash
+npm install
+# or
+yarn install
+```
+
+### 3. Environment Setup
+
+Create a `.env.local` file in the root directory:
 
 ```env
-# Cardano Network
-CARDANO_NETWORK=mainnet
-CARDANO_NODE_URL=your_node_url
-BLOCKFROST_API_KEY=your_blockfrost_key
+# Application Configuration
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_CARDANO_NETWORK=mainnet
 
-# AWS Configuration
-AWS_REGION=us-east-1
-DYNAMODB_TABLE_NAME=cardano-governance-prod
-S3_BUCKET_NAME=cardano-governance-documents
+# API Configuration
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3000/api
+NEXT_PUBLIC_WS_URL=ws://localhost:3000/ws
 
-# Application
-NEXTAUTH_SECRET=your_secret_key
-NEXTAUTH_URL=http://localhost:3000
+# Cardano Network Configuration
+NEXT_PUBLIC_BLOCKFROST_PROJECT_ID=your_blockfrost_project_id
+NEXT_PUBLIC_KOIOS_API_URL=https://api.koios.rest/api/v1
+
+# Analytics (Optional)
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 ```
+
+### 4. Run Development Server
+
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser to see the platform.
 
 ## 📁 Project Structure
 
 ```
-cardanogovernment/
-├── frontend/                 # Next.js frontend application
-│   ├── components/          # Reusable UI components
-│   ├── pages/              # Application pages and API routes
-│   ├── hooks/              # Custom React hooks
-│   ├── lib/                # Utility functions and configurations
-│   └── styles/             # Global styles and Tailwind config
-├── backend/                 # AWS Lambda functions
-│   ├── governance/         # Governance action handlers
-│   ├── drep/              # DRep management functions
-│   ├── voting/            # Voting system functions
-│   └── blockchain/        # Blockchain integration utilities
-├── infrastructure/          # AWS CDK infrastructure code
-│   ├── stacks/            # CDK stack definitions
-│   ├── constructs/        # Reusable CDK constructs
-│   └── config/            # Environment configurations
-├── contracts/              # Smart contracts (if applicable)
-├── docs/                   # Project documentation
-│   ├── api/               # API documentation
-│   ├── architecture/      # Architecture diagrams and specs
-│   └── user-guides/       # User documentation
-└── tests/                  # Test suites
-    ├── frontend/          # Frontend tests
-    ├── backend/           # Backend tests
-    └── integration/       # End-to-end tests
+src/
+├── app/                    # Next.js 15 App Router
+│   ├── globals.css        # Global styles and design tokens
+│   ├── layout.tsx         # Root layout with metadata
+│   └── page.tsx           # Main application component
+├── components/            # Reusable UI components
+│   ├── ui/               # Base UI components (shadcn/ui)
+│   ├── governance/       # Governance-specific components
+│   ├── wallet/           # Wallet integration components
+│   └── charts/           # Data visualization components
+├── lib/                  # Utility functions and configurations
+│   ├── utils.ts          # Core utility functions
+│   ├── mock-data.ts      # Development mock data
+│   └── api.ts            # API client configuration
+├── hooks/                # Custom React hooks
+│   ├── useWallet.ts      # Wallet management
+│   ├── useGovernance.ts  # Governance data management
+│   └── useAccessibility.ts # Accessibility helpers
+├── store/                # State management (Zustand)
+│   ├── governanceStore.ts # Governance state
+│   ├── walletStore.ts    # Wallet state
+│   └── uiStore.ts        # UI preferences and state
+└── types/                # TypeScript type definitions
+    ├── governance.ts     # Governance data types
+    ├── wallet.ts         # Wallet integration types
+    └── api.ts            # API response types
 ```
 
-## 🎯 Development Roadmap
+## 🎯 Development Commands
 
-### Phase 1: Foundation (Months 1-2)
-- [x] AWS infrastructure setup
-- [x] Basic user authentication and wallet connection
-- [x] Governance action viewer (read-only)
-- [x] DRep registration system
+```bash
+# Development
+npm run dev              # Start development server
+npm run build           # Build for production
+npm run start           # Start production server
+npm run lint            # Run ESLint
+npm run type-check      # Run TypeScript type checking
 
-### Phase 2: Core Functionality (Months 3-4)
-- [ ] DRep voting interface
-- [ ] Delegation platform and DRep directory
-- [ ] Proposal creation tool
-- [ ] Real-time vote tracking
+# Testing
+npm run test            # Run unit tests
+npm run test:watch      # Run tests in watch mode
+npm run test:coverage   # Run tests with coverage report
 
-### Phase 3: Enhancement (Months 5-6)
-- [ ] Advanced analytics and reporting
-- [ ] Mobile-responsive optimizations
-- [ ] Performance optimization and caching
-- [ ] Comprehensive testing and security audit
+# Quality Assurance
+npm run accessibility   # Run accessibility tests
+npm run lighthouse      # Run Lighthouse performance audit
+npm run bundle-analyzer # Analyze bundle size
+```
 
-### Phase 4: Launch & Scale (Month 6+)
-- [ ] Production deployment
-- [ ] User onboarding and documentation
-- [ ] Community feedback integration
-- [ ] Performance monitoring and optimization
+## 🎨 Design System
 
-## 📊 Success Metrics
+The platform uses a comprehensive design system with:
 
-### Technical KPIs
-- **Uptime**: 99.9% availability target
-- **Performance**: <2s page load times, <500ms API responses
-- **Scalability**: Support 50,000+ concurrent users during voting periods
-- **Security**: Zero critical vulnerabilities, comprehensive audit compliance
+### Color Palette
+- **Primary**: Cardano blue (#0ea5e9) with WCAG AA compliant variations
+- **Governance Status**: Active (#10b981), Pending (#f59e0b), Expired (#ef4444)
+- **Vote Colors**: Yes (#059669), No (#dc2626), Abstain (#6b7280)
 
-### Governance KPIs
-- **Participation**: 40%+ voting participation rate improvement
-- **User Growth**: 10,000+ registered participants within 6 months
-- **Engagement**: 60%+ monthly active user retention
-- **Platform Adoption**: Used for 80%+ of Cardano governance actions
+### Typography
+- **Primary Font**: Inter (sans-serif) for optimal readability
+- **Monospace Font**: JetBrains Mono for addresses and technical data
+- **Responsive Scale**: 12px - 48px with consistent line heights
 
-## 🛡️ Security & Compliance
+### Accessibility Features
+- **Touch Targets**: Minimum 44px for all interactive elements
+- **Focus Indicators**: High-contrast focus rings for keyboard navigation
+- **Color Contrast**: 4.5:1 minimum ratio for normal text, 3:1 for large text
+- **Screen Reader Support**: Comprehensive ARIA labels and semantic HTML
 
-- **Wallet Security**: No private key storage, signature-based authentication only
-- **Data Protection**: End-to-end encryption with AWS KMS
-- **Accessibility**: WCAG 2.2 AA compliance
-- **Privacy**: GDPR compliant with minimal data collection
-- **Audit Trail**: Comprehensive logging of all governance activities
+## 🔗 Wallet Integration
+
+The platform supports multiple Cardano wallets:
+
+### Supported Wallets
+- **Nami** - Full governance feature support
+- **Eternl** - Advanced DRep functionality
+- **Flint** - Basic voting and delegation
+- **Yoroi** - Standard governance operations
+- **GeroWallet** - Multi-signature support
+- **NuFi** - Hardware wallet integration
+
+### Integration Features
+- **CIP-30 Compliance** - Universal wallet adapter pattern
+- **Automatic Detection** - Detect available wallets on user device
+- **Secure Authentication** - Signature-based verification
+- **Transaction Signing** - Multi-step transaction preview and signing
+- **Error Handling** - Comprehensive error messages and recovery flows
+
+## 📊 Governance Features
+
+### Proposal Types Supported
+1. **Parameter Changes** - Protocol parameter adjustments
+2. **Hard Forks** - Protocol version upgrades
+3. **Treasury Withdrawals** - Community fund allocations
+4. **Constitutional Changes** - Governance framework updates
+5. **Committee Updates** - Constitutional committee management
+
+### Voting Mechanism
+- **Three-Chamber System** - DReps, SPOs, Constitutional Committee
+- **Threshold Validation** - Automatic threshold checking
+- **Real-time Results** - Live vote counting and progress
+- **Vote Rationale** - Optional explanations for voting decisions
+
+### DRep Features
+- **Profile Management** - Comprehensive DRep profiles with manifesto
+- **Performance Metrics** - Participation rate, response time, reputation
+- **Delegation Tracking** - Real-time delegation monitoring
+- **Communication Tools** - Direct channels to delegators
+
+## 🔒 Security & Privacy
+
+### Security Measures
+- **Wallet Security** - No private key storage, signature-based authentication
+- **Data Protection** - Encryption at rest and in transit
+- **Rate Limiting** - API endpoint protection against abuse
+- **Input Validation** - Comprehensive sanitization of user inputs
+- **Content Security Policy** - XSS protection and secure resource loading
+
+### Privacy Features
+- **Minimal Data Collection** - Only necessary governance data
+- **User Control** - Full control over profile information
+- **Transparent Operations** - Open-source codebase
+- **GDPR Compliance** - European privacy regulation compliance
+
+## 🌐 Deployment
+
+### Environment Requirements
+- **Node.js** 18+ runtime environment
+- **AWS Account** for serverless deployment (recommended)
+- **Custom Domain** with SSL certificate
+- **CDN** for global content delivery
+
+### Deployment Options
+
+#### Vercel (Recommended for MVP)
+```bash
+npm install -g vercel
+vercel --prod
+```
+
+#### AWS Amplify
+```bash
+amplify init
+amplify add hosting
+amplify publish
+```
+
+#### Docker
+```bash
+docker build -t cardano-governance .
+docker run -p 3000:3000 cardano-governance
+```
+
+## 🧪 Testing
+
+### Testing Strategy
+- **Unit Tests** - Component and utility function testing
+- **Integration Tests** - API and wallet integration testing
+- **Accessibility Tests** - WCAG compliance validation
+- **Performance Tests** - Core Web Vitals monitoring
+- **E2E Tests** - Complete user journey validation
+
+### Running Tests
+```bash
+# Unit tests
+npm run test
+
+# Accessibility tests
+npm run test:a11y
+
+# Performance tests
+npm run test:lighthouse
+
+# End-to-end tests
+npm run test:e2e
+```
+
+## 📈 Performance Monitoring
+
+### Metrics Tracked
+- **Core Web Vitals** - LCP, FID, CLS measurements
+- **Custom Metrics** - Governance action load time, vote submission time
+- **User Experience** - Error rates, success rates, user satisfaction
+- **Accessibility** - Screen reader usage, keyboard navigation patterns
+
+### Monitoring Tools
+- **Lighthouse CI** - Automated performance audits
+- **Web Vitals** - Real user monitoring
+- **Sentry** - Error tracking and performance monitoring
+- **Google Analytics** - User behavior analytics (privacy-compliant)
 
 ## 🤝 Contributing
 
-We welcome contributions from the Cardano community! Please read our [Contributing Guidelines](CONTRIBUTING.md) for details on our code of conduct and development process.
+We welcome contributions from the Cardano community! Please read our [Contributing Guidelines](CONTRIBUTING.md) for details.
 
 ### Development Workflow
-
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
@@ -194,38 +306,61 @@ We welcome contributions from the Cardano community! Please read our [Contributi
 5. Open a Pull Request
 
 ### Code Standards
-
-- TypeScript strict mode enabled
-- ESLint + Prettier for code formatting
-- Comprehensive unit and integration tests
-- Security-first development practices
-
-## 📚 Documentation
-
-- [API Documentation](docs/api/README.md)
-- [Architecture Overview](docs/architecture/README.md)
-- [User Guides](docs/user-guides/README.md)
-- [Development Setup](docs/development/README.md)
-- [Deployment Guide](docs/deployment/README.md)
-
-## 📞 Support & Community
-
-- **Discord**: [Join our community](https://discord.gg/cardano-governance)
-- **Telegram**: [Developer discussions](https://t.me/cardano_governance_dev)
-- **Issues**: [GitHub Issues](https://github.com/your-username/cardanogovernment/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-username/cardanogovernment/discussions)
+- **TypeScript** - Strict type checking required
+- **ESLint** - Code quality and consistency
+- **Prettier** - Code formatting
+- **Accessibility** - WCAG 2.2 AA compliance required
+- **Testing** - Minimum 80% code coverage
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## � Acknowledgments
 
-- **Cardano Foundation** for governance framework specifications
-- **Input Output Global (IOG)** for CIP-1694 implementation
-- **Cardano Community** for feedback and testing
-- **Open Source Contributors** who make this project possible
+- **Cardano Foundation** - For the governance framework and ecosystem support
+- **IOG (Input Output Global)** - For the technical infrastructure and CIP standards
+- **Cardano Community** - For feedback, testing, and continuous improvement
+- **Accessibility Community** - For guidance on inclusive design practices
+
+## 📞 Support & Community
+
+### Get Help
+- **Documentation** - [https://docs.cardano-governance.org](https://docs.cardano-governance.org)
+- **Discord** - [https://discord.gg/cardano-governance](https://discord.gg/cardano-governance)
+- **GitHub Issues** - [Report bugs or request features](https://github.com/your-org/cardano-governance-platform/issues)
+
+### Community Links
+- **Twitter** - [@CardanoGov](https://twitter.com/CardanoGov)
+- **Telegram** - [Cardano Governance Discussion](https://t.me/cardano_governance)
+- **Reddit** - [r/CardanoGovernance](https://reddit.com/r/CardanoGovernance)
+
+## � Roadmap
+
+### Phase 1: Foundation (Q1 2025) ✅
+- Core governance interface
+- Basic wallet integration
+- DRep directory and voting
+- Accessibility compliance
+
+### Phase 2: Enhancement (Q2 2025)
+- Advanced analytics dashboard
+- Mobile application (React Native)
+- Multi-language support
+- Enhanced proposal creation tools
+
+### Phase 3: Advanced Features (Q3 2025)
+- AI-powered proposal analysis
+- Advanced notification system
+- Governance simulation tools
+- Cross-chain governance integration
+
+### Phase 4: Ecosystem Integration (Q4 2025)
+- Third-party tool integration
+- API marketplace
+- Governance automation tools
+- Enterprise dashboard
 
 ---
 
-**Building the future of decentralized governance on Cardano** 🚀 
+Built with ❤️ for the Cardano community by the Cardano Governance Platform Team. 
