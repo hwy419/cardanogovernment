@@ -74,6 +74,9 @@ import {
   cn
 } from '@/lib/utils';
 
+// Import DRep registration components
+import { DRepStatusChecker } from '@/components/drep-registration';
+
 // Types
 interface NavigationItem {
   id: string;
@@ -491,6 +494,20 @@ export default function CardanoGovernancePlatform() {
         <h3 className={cn('text-lg font-semibold mb-4', theme.text)}>
           Welcome back, {currentUser.profile.name}
         </h3>
+        
+        {/* DRep Status Checker */}
+        <div className="mb-6">
+          <DRepStatusChecker
+            walletAddress={isWalletConnected ? 'addr1qxy7w9d8' : undefined}
+            isWalletConnected={isWalletConnected}
+            theme={theme}
+            onRegistrationComplete={(data) => {
+              setAnnouncement('DRep registration completed successfully!');
+              setTimeout(() => setAnnouncement(''), 3000);
+            }}
+          />
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
           {[
             {
@@ -502,28 +519,28 @@ export default function CardanoGovernancePlatform() {
               stats: `${mockDReps.length} Active DReps`
             },
             {
-              title: "You are Registered as a DRep", 
-              description: "Vote using your own power combined with delegated power.",
-              icon: "👤",
-              action: "View your DRep details",
-              onClick: () => setSelectedDRep(mockDReps[0]),
-              stats: `${formatADA(currentUser.totalStake)} Voting Power`
-            },
-            {
-              title: "Become a Direct Voter",
-              description: "Register to Vote on Governance Actions.",
-              icon: "🎯", 
-              action: "Register",
-              onClick: () => {},
-              stats: "Not Registered"
-            },
-            {
               title: "View Governance Actions",
               description: "Review governance actions submitted on-chain.",
               icon: "📋",
               action: "View Governance Actions", 
               onClick: () => setCurrentPage('proposals'),
               stats: `${mockGovernanceStats.activeProposals} Active`
+            },
+            {
+              title: "Create Proposal",
+              description: "Submit a new governance proposal to the community.",
+              icon: "✍️",
+              action: "Create Proposal",
+              onClick: () => setCurrentPage('create-proposal'),
+              stats: "Submit Your Ideas"
+            },
+            {
+              title: "Governance Analytics",
+              description: "View participation rates and voting trends.",
+              icon: "📊", 
+              action: "View Analytics",
+              onClick: () => setCurrentPage('outcomes'),
+              stats: `${formatNumber(mockGovernanceStats.participationRate * 100)}% Participation`
             }
           ].map((card, index) => (
             <div 
