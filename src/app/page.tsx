@@ -678,13 +678,13 @@ export default function CardanoGovernancePlatform() {
       case 'dashboard':
         return <Dashboard />;
       case 'proposals':
-        return <ProposalsList />;
+        return <ProposalsList pageType="all" />;
       case 'dreps':
         return <DRepDirectory />;
       case 'voting':
-        return <ProposalsList />;
+        return <ProposalsList pageType="voting" />;
       case 'outcomes':
-        return <ProposalsList />;
+        return <ProposalsList pageType="outcomes" />;
       case 'create-proposal':
         return <CreateProposal />;
       default:
@@ -693,7 +693,7 @@ export default function CardanoGovernancePlatform() {
   };
 
   // Governance Actions/Proposals Component with comprehensive features
-  const ProposalsList = () => {
+  const ProposalsList = ({ pageType = 'all' }: { pageType?: 'all' | 'voting' | 'outcomes' }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -713,7 +713,17 @@ export default function CardanoGovernancePlatform() {
         const matchesType = typeFilter === 'all' || proposal.type === typeFilter;
         const matchesCategory = categoryFilter === 'all' || proposal.metadata.category === categoryFilter;
         
-        return matchesSearch && matchesStatus && matchesType && matchesCategory;
+        // Apply page-specific filtering
+        let matchesPageType = true;
+        if (pageType === 'voting') {
+          // Live Voting page: exclude expired proposals
+          matchesPageType = proposal.status !== 'expired';
+        } else if (pageType === 'outcomes') {
+          // Outcomes page: only show completed proposals (expired, ratified, rejected)
+          matchesPageType = ['expired', 'ratified', 'rejected'].includes(proposal.status);
+        }
+        
+        return matchesSearch && matchesStatus && matchesType && matchesCategory && matchesPageType;
       });
 
       // Sort proposals
@@ -738,7 +748,7 @@ export default function CardanoGovernancePlatform() {
       });
 
       return filtered;
-    }, [searchTerm, statusFilter, typeFilter, categoryFilter, sortBy, sortOrder]);
+    }, [searchTerm, statusFilter, typeFilter, categoryFilter, sortBy, sortOrder, pageType]);
 
     // Calculate vote totals for a proposal
     const calculateVoteTotals = (proposal: GovernanceAction) => {
@@ -789,7 +799,7 @@ export default function CardanoGovernancePlatform() {
       }
     };
 
-    const ProposalCard = ({ proposal }: { proposal: GovernanceAction }) => {
+    const ProposalCard = ({ proposal, pageType }: { proposal: GovernanceAction; pageType: 'all' | 'voting' | 'outcomes' }) => {
       const percentages = calculateVotePercentages(proposal);
       const timeRemaining = getTimeRemaining(proposal.votingEndDate);
       const statusStyles = getStatusStyles(proposal.status);
@@ -820,6 +830,17 @@ export default function CardanoGovernancePlatform() {
                 )}>
                   {proposal.status}
                 </span>
+                {/* Show outcome for completed proposals on Outcomes page */}
+                {pageType === 'outcomes' && proposal.status === 'expired' && (
+                  <span className={cn(
+                    'px-3 py-1 rounded-full text-xs font-medium',
+                    proposal.outcome === 'ratified' 
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border border-green-300'
+                      : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border border-red-300'
+                  )}>
+                    {proposal.outcome === 'ratified' ? 'Ratified' : 'Not Ratified'}
+                  </span>
+                )}
                 <span className={cn(
                   'px-2 py-1 rounded text-xs',
                   'bg-primary/10 text-primary border border-primary/20'
@@ -982,7 +1003,7 @@ export default function CardanoGovernancePlatform() {
             >
               View Details
             </button>
-            {proposal.status === 'active' && (
+            {proposal.status === 'active' && pageType !== 'outcomes' && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -998,7 +1019,7 @@ export default function CardanoGovernancePlatform() {
       );
     };
 
-    const ProposalListItem = ({ proposal }: { proposal: GovernanceAction }) => {
+    const ProposalListItem = ({ proposal, pageType }: { proposal: GovernanceAction; pageType: 'all' | 'voting' | 'outcomes' }) => {
       const percentages = calculateVotePercentages(proposal);
       const timeRemaining = getTimeRemaining(proposal.votingEndDate);
       const statusStyles = getStatusStyles(proposal.status);
@@ -1030,6 +1051,17 @@ export default function CardanoGovernancePlatform() {
                 )}>
                   {proposal.status}
                 </span>
+                {/* Show outcome for completed proposals on Outcomes page */}
+                {pageType === 'outcomes' && proposal.status === 'expired' && (
+                  <span className={cn(
+                    'px-2 py-1 rounded text-xs font-medium',
+                    proposal.outcome === 'ratified' 
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border border-green-300'
+                      : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border border-red-300'
+                  )}>
+                    {proposal.outcome === 'ratified' ? 'Ratified' : 'Not Ratified'}
+                  </span>
+                )}
                 <span className={cn(
                   'px-2 py-1 rounded text-xs',
                   'bg-primary/10 text-primary'
@@ -1079,7 +1111,7 @@ export default function CardanoGovernancePlatform() {
               >
                 View
               </button>
-              {proposal.status === 'active' && (
+              {proposal.status === 'active' && pageType !== 'outcomes' && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -1101,10 +1133,16 @@ export default function CardanoGovernancePlatform() {
         {/* Header */}
         <div className="mb-6">
           <h2 className={cn('text-2xl font-bold mb-2', theme.text)}>
-            Governance Actions
+            {pageType === 'voting' ? 'Live Voting' : 
+             pageType === 'outcomes' ? 'Outcomes' : 
+             'Governance Actions'}
           </h2>
           <p className={cn('text-sm', theme.textSecondary)}>
-            Browse and vote on governance proposals that shape the future of Cardano. Stay informed about protocol changes, treasury allocations, and constitutional amendments.
+            {pageType === 'voting' ? 
+              'Cast your vote on active governance proposals. Your participation helps shape the future of Cardano.' :
+             pageType === 'outcomes' ? 
+              'View the results and outcomes of completed governance proposals. See how the community voted and what decisions were made.' :
+              'Browse and vote on governance proposals that shape the future of Cardano. Stay informed about protocol changes, treasury allocations, and constitutional amendments.'}
           </p>
         </div>
 
@@ -1337,8 +1375,8 @@ export default function CardanoGovernancePlatform() {
           }>
             {filteredAndSortedProposals.map((proposal) => (
               viewMode === 'grid' 
-                ? <ProposalCard key={proposal.id} proposal={proposal} />
-                : <ProposalListItem key={proposal.id} proposal={proposal} />
+                ? <ProposalCard key={proposal.id} proposal={proposal} pageType={pageType} />
+                : <ProposalListItem key={proposal.id} proposal={proposal} pageType={pageType} />
             ))}
           </div>
         )}
