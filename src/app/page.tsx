@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import Image from 'next/image';
 import { 
   Home, 
   Users, 
@@ -9,33 +10,22 @@ import {
   TrendingUp, 
   Moon, 
   Sun, 
-  Wallet, 
   Search, 
   Filter, 
-  ChevronRight, 
   Clock, 
   CheckCircle, 
   XCircle,
-  AlertCircle,
   BarChart3,
   PlusCircle,
   User,
   ExternalLink,
   Copy,
   ArrowLeft,
-  Calendar,
   Zap,
-  CheckSquare,
-  Square,
   Menu,
   X,
-  ArrowUp,
-  ArrowDown,
   Loader2,
-  Shield,
-  Target,
   Globe,
-  Github,
   Twitter,
   MessageCircle,
   Bell,
@@ -53,7 +43,6 @@ import {
   mockDReps, 
   mockGovernanceActions, 
   mockVotes,
-  mockDelegations,
   mockGovernanceStats,
   currentMockUser
 } from '@/lib/mock-data';
@@ -62,14 +51,9 @@ import {
   formatADA,
   formatNumber,
   formatDate,
-  formatDuration,
   truncateAddress,
   getStatusStyles,
   getVoteStyles,
-  calculatePercentage,
-  calculateVoteTotal,
-  calculateOverallVotePercentages,
-  isCloseToDeadline,
   copyToClipboard,
   cn
 } from '@/lib/utils';
@@ -77,11 +61,14 @@ import {
 // Import DRep registration components
 import { DRepStatusChecker } from '@/components/drep-registration';
 
+// Import Wallet components
+import { WalletConnector, useWallet } from '@/components/wallet';
+
 // Types
 interface NavigationItem {
   id: string;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<any>;
   badge?: number;
 }
 
@@ -164,15 +151,17 @@ interface GovernanceAction {
 }
 
 export default function CardanoGovernancePlatform() {
+  // Wallet integration
+  const { 
+    isConnected: isWalletConnected,
+    formattedBalance
+  } = useWallet();
+
   // State management
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [selectedProposal, setSelectedProposal] = useState<GovernanceAction | null>(null);
   const [selectedDRep, setSelectedDRep] = useState<DRep | null>(null);
-  const [isWalletConnected, setIsWalletConnected] = useState(true);
-  const [isWalletConnecting, setIsWalletConnecting] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [announcement, setAnnouncement] = useState('');
@@ -203,18 +192,8 @@ export default function CardanoGovernancePlatform() {
   ];
 
   // Event handlers
-  const handleWalletConnect = async () => {
-    setIsWalletConnecting(true);
-    // Simulate wallet connection
-    setTimeout(() => {
-      setIsWalletConnected(true);
-      setIsWalletConnecting(false);
-      setAnnouncement('Wallet connected successfully');
-      setTimeout(() => setAnnouncement(''), 3000);
-    }, 2000);
-  };
 
-  const handleVoteSubmit = async (proposalId: string, vote: string, rationale?: string) => {
+  const handleVoteSubmit = async (_proposalId: string, vote: string, _rationale?: string) => {
     setIsLoading(true);
     // Simulate vote submission
     setTimeout(() => {
@@ -224,7 +203,7 @@ export default function CardanoGovernancePlatform() {
     }, 1500);
   };
 
-  const handleDelegation = async (drepId: string) => {
+  const handleDelegation = async (_drepId: string) => {
     setIsLoading(true);
     // Simulate delegation
     setTimeout(() => {
@@ -377,33 +356,15 @@ export default function CardanoGovernancePlatform() {
             </button>
           </div>
           
-          {isWalletConnected ? (
-            <div className="mt-3 flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full" aria-hidden="true"></div>
-              <span className={cn('text-sm', theme.textSecondary)}>
-                Wallet Connected
-              </span>
-            </div>
-          ) : (
-            <button 
-              onClick={handleWalletConnect}
-              disabled={isWalletConnecting}
-              className={cn(
-                'mt-3 w-full px-3 py-2 rounded-lg text-sm font-medium',
-                'bg-primary text-primary-foreground hover:bg-primary/90',
-                'focus-visible-ring disabled:opacity-50 disabled:cursor-not-allowed'
-              )}
-            >
-              {isWalletConnecting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
-                  Connecting...
-                </>
-              ) : (
-                'Connect Wallet'
-              )}
-            </button>
-          )}
+          <div className="mt-3">
+            <WalletConnector 
+              variant="outline" 
+              size="sm"
+              showBalance={true}
+              showAddress={true}
+              className="w-full"
+            />
+          </div>
         </div>
       </nav>
 
@@ -431,17 +392,19 @@ export default function CardanoGovernancePlatform() {
       </div>
       
       <div className="flex items-center gap-4">
-        {/* Voting power display */}
-        <div className={cn(
-          'flex items-center gap-2 px-3 py-2 rounded-lg border',
-          theme.cardBg, theme.border
-        )}>
-          <Zap className="w-4 h-4 text-cardano-500" aria-hidden="true" />
-          <span className={cn('text-sm', theme.text)}>Voting power:</span>
-          <span className={cn('text-sm font-bold', theme.text)}>
-            {formatADA(currentUser.totalStake, { compact: true })}
-          </span>
-        </div>
+        {/* Wallet balance display */}
+        {isWalletConnected && (
+          <div className={cn(
+            'flex items-center gap-2 px-3 py-2 rounded-lg border',
+            theme.cardBg, theme.border
+          )}>
+            <Zap className="w-4 h-4 text-cardano-500" aria-hidden="true" />
+            <span className={cn('text-sm', theme.text)}>Balance:</span>
+            <span className={cn('text-sm font-bold', theme.text)}>
+              {formattedBalance} ₳
+            </span>
+          </div>
+        )}
         
         {/* Notifications */}
         <button
@@ -483,6 +446,14 @@ export default function CardanoGovernancePlatform() {
             <Moon className="w-5 h-5" />
           )}
         </button>
+
+        {/* Wallet Connector */}
+        <WalletConnector 
+          variant="default" 
+          size="sm"
+          showBalance={false}
+          showAddress={false}
+        />
       </div>
     </header>
   );
@@ -492,16 +463,16 @@ export default function CardanoGovernancePlatform() {
     <div className="p-6">
       <div className="mb-8">
         <h3 className={cn('text-lg font-semibold mb-4', theme.text)}>
-          Welcome back, {currentUser.profile.name}
+          Welcome back, {currentUser?.profile?.name || 'User'}
         </h3>
         
         {/* DRep Status Checker */}
         <div className="mb-6">
           <DRepStatusChecker
-            walletAddress={isWalletConnected ? 'addr1qxy7w9d8' : undefined}
+            walletAddress={isWalletConnected ? 'addr1qxy7w9d8' : ''}
             isWalletConnected={isWalletConnected}
             theme={theme}
-            onRegistrationComplete={(data) => {
+            onRegistrationComplete={(_data) => {
               setAnnouncement('DRep registration completed successfully!');
               setTimeout(() => setAnnouncement(''), 3000);
             }}
@@ -819,7 +790,7 @@ export default function CardanoGovernancePlatform() {
     const ProposalCard = ({ proposal, pageType }: { proposal: GovernanceAction; pageType: 'all' | 'voting' | 'outcomes' }) => {
       const percentages = calculateVotePercentages(proposal);
       const timeRemaining = getTimeRemaining(proposal.votingEndDate);
-      const statusStyles = getStatusStyles(proposal.status);
+      const statusStyles = getStatusStyles(proposal.status as any);
 
       return (
         <div className={cn(
@@ -843,7 +814,7 @@ export default function CardanoGovernancePlatform() {
               <div className="flex items-center gap-3 mb-2">
                 <span className={cn(
                   'px-3 py-1 rounded-full text-xs font-medium',
-                  statusStyles.bg, statusStyles.text
+                  statusStyles
                 )}>
                   {proposal.status}
                 </span>
@@ -1039,7 +1010,7 @@ export default function CardanoGovernancePlatform() {
     const ProposalListItem = ({ proposal, pageType }: { proposal: GovernanceAction; pageType: 'all' | 'voting' | 'outcomes' }) => {
       const percentages = calculateVotePercentages(proposal);
       const timeRemaining = getTimeRemaining(proposal.votingEndDate);
-      const statusStyles = getStatusStyles(proposal.status);
+      const statusStyles = getStatusStyles(proposal.status as any);
 
       return (
         <div className={cn(
@@ -1064,7 +1035,7 @@ export default function CardanoGovernancePlatform() {
                 </h3>
                 <span className={cn(
                   'px-2 py-1 rounded text-xs',
-                  statusStyles.bg, statusStyles.text
+                  statusStyles
                 )}>
                   {proposal.status}
                 </span>
@@ -1094,7 +1065,7 @@ export default function CardanoGovernancePlatform() {
             <div className="flex items-center gap-6 text-sm">
               <div className="text-center">
                 <div className={cn('font-bold', theme.text)}>
-                  {formatDate(proposal.submissionDate, { short: true })}
+                  {formatDate(proposal.submissionDate)}
                 </div>
                 <div className={cn('text-xs', theme.textSecondary)}>Submitted</div>
               </div>
@@ -1416,17 +1387,17 @@ export default function CardanoGovernancePlatform() {
       let filtered = mockDReps.filter(drep => {
         const matchesSearch = drep.metadata.manifesto.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             drep.metadata.experience.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            (drep.id === 'drep13g5w9xzdtkcqr4h8h' ? currentUser.profile.name.toLowerCase().includes(searchTerm.toLowerCase()) : false);
+                            (drep.id === 'drep13g5w9xzdtkcqr4h8h' ? currentUser?.profile?.name?.toLowerCase().includes(searchTerm.toLowerCase()) : false);
         const matchesStatus = statusFilter === 'all' || drep.status === statusFilter;
-        const matchesFocusArea = focusAreaFilter === 'all' || drep.metadata.focusAreas.includes(focusAreaFilter);
+        const matchesFocusArea = focusAreaFilter === 'all' || drep.metadata.focusAreas.includes(focusAreaFilter as any);
         
         return matchesSearch && matchesStatus && matchesFocusArea;
       });
 
       // Sort DReps
       filtered.sort((a, b) => {
-        const aValue = a.performance[sortBy] || a[sortBy];
-        const bValue = b.performance[sortBy] || b[sortBy];
+        const aValue = (a.performance as any)[sortBy] || (a as any)[sortBy];
+        const bValue = (b.performance as any)[sortBy] || (b as any)[sortBy];
         
         if (sortOrder === 'asc') {
           return aValue - bValue;
@@ -1440,8 +1411,8 @@ export default function CardanoGovernancePlatform() {
 
     const DRepCard = ({ drep }: { drep: DRep }) => {
       const isCurrentUser = drep.id === 'drep13g5w9xzdtkcqr4h8h';
-      const displayName = isCurrentUser ? currentUser.profile.name : `DRep ${drep.id.slice(0, 12)}...`;
-      const avatar = isCurrentUser ? currentUser.profile.avatar : `https://api.dicebear.com/7.x/avataaars/svg?seed=${drep.id}`;
+      const displayName = isCurrentUser ? currentUser?.profile?.name : `DRep ${drep.id.slice(0, 12)}...`;
+      const avatar = isCurrentUser ? (currentUser?.profile?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${drep.id}`) : `https://api.dicebear.com/7.x/avataaars/svg?seed=${drep.id}`;
 
       return (
         <div className={cn(
@@ -1461,9 +1432,11 @@ export default function CardanoGovernancePlatform() {
         >
           <div className="flex items-start gap-4">
             <div className="relative">
-              <img 
+              <Image 
                 src={avatar}
                 alt={`${displayName} avatar`}
+                width={64}
+                height={64}
                 className="w-16 h-16 rounded-full border-2 border-primary/20 group-hover:border-primary/40 transition-colors"
               />
               {drep.status === 'active' && (
@@ -1575,8 +1548,8 @@ export default function CardanoGovernancePlatform() {
 
     const DRepListItem = ({ drep }: { drep: DRep }) => {
       const isCurrentUser = drep.id === 'drep13g5w9xzdtkcqr4h8h';
-      const displayName = isCurrentUser ? currentUser.profile.name : `DRep ${drep.id.slice(0, 12)}...`;
-      const avatar = isCurrentUser ? currentUser.profile.avatar : `https://api.dicebear.com/7.x/avataaars/svg?seed=${drep.id}`;
+      const displayName = isCurrentUser ? currentUser?.profile?.name : `DRep ${drep.id.slice(0, 12)}...`;
+      const avatar = isCurrentUser ? (currentUser?.profile?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${drep.id}`) : `https://api.dicebear.com/7.x/avataaars/svg?seed=${drep.id}`;
 
       return (
         <div className={cn(
@@ -1594,9 +1567,11 @@ export default function CardanoGovernancePlatform() {
         }}
         >
           <div className="flex items-center gap-4">
-            <img 
+            <Image 
               src={avatar}
               alt={`${displayName} avatar`}
+              width={48}
+              height={48}
               className="w-12 h-12 rounded-full border border-primary/20"
             />
             
@@ -1925,7 +1900,7 @@ export default function CardanoGovernancePlatform() {
     };
 
     const voteMetrics = calculateVoteMetrics();
-    const statusStyles = getStatusStyles(proposal.status);
+          const statusStyles = getStatusStyles(proposal.status as any);
     const timeRemaining = proposal.status === 'active' ? 
       (() => {
         const now = new Date();
@@ -1979,7 +1954,7 @@ export default function CardanoGovernancePlatform() {
                   <div className="flex items-center gap-3 mb-3">
                     <span className={cn(
                       'px-3 py-1 rounded-full text-sm font-medium',
-                      statusStyles.bg, statusStyles.text
+                      statusStyles
                     )}>
                       {proposal.status}
                     </span>
@@ -2032,7 +2007,7 @@ export default function CardanoGovernancePlatform() {
                 <div>
                   <div className={cn('text-sm font-medium', theme.text)}>Voting Period</div>
                   <div className={cn('text-sm', theme.textSecondary)}>
-                    {formatDate(proposal.votingStartDate, { short: true })} - {formatDate(proposal.votingEndDate, { short: true })}
+                    {formatDate(proposal.votingStartDate)} - {formatDate(proposal.votingEndDate)}
                   </div>
                 </div>
                 <div>
@@ -2129,7 +2104,7 @@ export default function CardanoGovernancePlatform() {
                   <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-primary" />
                     <span className={cn('text-sm font-medium', theme.text)}>
-                      Voting power: {formatADA(currentUser.totalStake, { compact: true })}
+                      Voting power: {formatADA(currentUser?.totalStake || 0, { compact: true })}
                     </span>
                   </div>
                 </div>
@@ -2257,7 +2232,7 @@ export default function CardanoGovernancePlatform() {
                   proposal.outcome === 'ratified' ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'
                 )}>
                   This proposal has been {proposal.outcome} by the Cardano community.
-                  {proposal.finalizedAt && ` Final decision made on ${formatDate(proposal.finalizedAt)}.`}
+                  {(proposal as any).finalizedAt && ` Final decision made on ${formatDate((proposal as any).finalizedAt)}.`}
                 </p>
               </div>
             )}
@@ -2383,19 +2358,19 @@ export default function CardanoGovernancePlatform() {
                 <div className="flex justify-between">
                   <span className={theme.textSecondary}>DRep Threshold:</span>
                   <span className={cn('font-medium', theme.text)}>
-                    {(proposal.thresholds?.drepThreshold * 100 || 51).toFixed(0)}%
+                    {((proposal as any).thresholds?.drepThreshold * 100 || 51).toFixed(0)}%
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className={theme.textSecondary}>SPO Threshold:</span>
                   <span className={cn('font-medium', theme.text)}>
-                    {(proposal.thresholds?.spoThreshold * 100 || 51).toFixed(0)}%
+                    {((proposal as any).thresholds?.spoThreshold * 100 || 51).toFixed(0)}%
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className={theme.textSecondary}>CC Threshold:</span>
                   <span className={cn('font-medium', theme.text)}>
-                    {(proposal.thresholds?.ccThreshold * 100 || 67).toFixed(0)}%
+                    {((proposal as any).thresholds?.ccThreshold * 100 || 67).toFixed(0)}%
                   </span>
                 </div>
               </div>
@@ -2440,7 +2415,7 @@ export default function CardanoGovernancePlatform() {
                     </div>
                   </div>
                 </div>
-                {proposal.finalizedAt && (
+                {(proposal as any).finalizedAt && (
                   <div className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
                     <div>
@@ -2448,7 +2423,7 @@ export default function CardanoGovernancePlatform() {
                         {proposal.outcome === 'ratified' ? 'Ratified' : 'Rejected'}
                       </div>
                       <div className={cn('text-xs', theme.textSecondary)}>
-                        {formatDate(proposal.finalizedAt)}
+                        {formatDate((proposal as any).finalizedAt)}
                       </div>
                     </div>
                   </div>
@@ -2467,7 +2442,7 @@ export default function CardanoGovernancePlatform() {
                   View on Blockchain
                 </button>
                 <button 
-                  onClick={() => copyToClipboard(proposal.submissionTxHash)}
+                  onClick={() => copyToClipboard((proposal as any).submissionTxHash)}
                   className="btn-outline w-full text-sm"
                 >
                   <Copy className="w-4 h-4 mr-2" />
@@ -2490,9 +2465,9 @@ export default function CardanoGovernancePlatform() {
 
   const DRepDetail = ({ drep, onBack }: { drep: DRep; onBack: () => void }) => {
     const isCurrentUser = drep.id === 'drep13g5w9xzdtkcqr4h8h';
-    const displayName = isCurrentUser ? currentUser.profile.name : `DRep ${drep.id.slice(0, 12)}...`;
-    const avatar = isCurrentUser ? currentUser.profile.avatar : `https://api.dicebear.com/7.x/avataaars/svg?seed=${drep.id}`;
-    const userProfile = isCurrentUser ? currentUser.profile : null;
+    const displayName = isCurrentUser ? currentUser?.profile?.name : `DRep ${drep.id.slice(0, 12)}...`;
+    const avatar = isCurrentUser ? (currentUser?.profile?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${drep.id}`) : `https://api.dicebear.com/7.x/avataaars/svg?seed=${drep.id}`;
+    const userProfile = isCurrentUser ? currentUser?.profile : null;
 
     // Calculate additional metrics
     const totalVotes = drep.performance.totalVotes;
@@ -2528,9 +2503,11 @@ export default function CardanoGovernancePlatform() {
             <div className={cn('p-6 rounded-xl border', theme.cardBg, theme.border)}>
               <div className="flex items-start gap-6 mb-6">
                 <div className="relative">
-                  <img 
+                  <Image 
                     src={avatar}
                     alt={`${displayName} avatar`}
+                    width={96}
+                    height={96}
                     className="w-24 h-24 rounded-full border-4 border-primary/20"
                   />
                   {drep.status === 'active' && (
