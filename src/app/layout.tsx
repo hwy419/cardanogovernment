@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import React from 'react';
 import './globals.css';
+import { WalletProvider } from '@/components/wallet';
 
 // Font configurations
 const inter = Inter({
@@ -212,10 +213,12 @@ export default function RootLayout({ children }: RootLayoutProps) {
           className="sr-only"
         ></div>
         
-        {/* Main application */}
-        <div id="root" className="min-h-screen">
-          {children}
-        </div>
+        {/* Main application with wallet provider */}
+        <WalletProvider>
+          <div id="root" className="min-h-screen">
+            {children}
+          </div>
+        </WalletProvider>
         
         {/* Page load performance monitoring */}
         <script

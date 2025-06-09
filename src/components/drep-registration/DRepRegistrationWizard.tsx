@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -18,7 +18,6 @@ import {
   User,
   FileText,
   Shield,
-  Zap,
   Eye,
   EyeOff,
   Loader2,
@@ -111,7 +110,7 @@ export function DRepRegistrationWizard({
   const watchedValues = watch();
 
   // Generate CIP-100/108 compliant metadata JSON
-  const generateMetadataJSON = (data: DRepRegistrationFormData) => {
+  const generateMetadataJSON = useCallback((data: DRepRegistrationFormData) => {
     const metadata = {
       '@context': {
         '@language': 'en-us',
@@ -188,7 +187,7 @@ export function DRepRegistrationWizard({
     };
 
     return JSON.stringify(metadata, null, 2);
-  };
+  }, [walletAddress]);
 
   // Validate current step
   const validateCurrentStep = async () => {
@@ -228,7 +227,7 @@ export function DRepRegistrationWizard({
       const json = generateMetadataJSON(formData);
       setGeneratedMetadata(json);
     }
-  }, [currentStep, watchedValues, getValues]);
+  }, [currentStep, watchedValues, getValues, generateMetadataJSON]);
 
   // Submit handlers
   const handleCopyJson = () => {
@@ -311,7 +310,7 @@ export function DRepRegistrationWizard({
           </div>
           <div className="flex justify-between mt-2">
             <span className={cn('text-sm font-medium', theme.text)}>
-              {STEPS[currentStep].title}
+              {STEPS[currentStep]?.title}
             </span>
             <span className={cn('text-sm', theme.textSecondary)}>
               {currentStep + 1} of {STEPS.length}
@@ -641,8 +640,8 @@ export function DRepRegistrationWizard({
                   <div className="flex">
                     <Info className="w-5 h-5 text-blue-500 mr-2" />
                     <p className={cn('text-sm', theme.textSecondary)}>
-                      We'll generate a CIP-100/108 compliant JSON metadata file containing all your information. 
-                      You'll need to upload this to your GitHub account and provide the public URL.
+                      We&apos;ll generate a CIP-100/108 compliant JSON metadata file containing all your information. 
+                      You&apos;ll need to upload this to your GitHub account and provide the public URL.
                     </p>
                   </div>
                 </div>
@@ -712,7 +711,7 @@ export function DRepRegistrationWizard({
                     </div>
                     <div className="flex items-start gap-2">
                       <span className="bg-primary text-primary-foreground rounded px-2 py-1 text-xs">4</span>
-                      <p className={theme.textSecondary}>Copy the raw file URL (click "Raw" button on GitHub)</p>
+                      <p className={theme.textSecondary}>Copy the raw file URL (click &quot;Raw&quot; button on GitHub)</p>
                     </div>
                     <div className="flex items-start gap-2">
                       <span className="bg-primary text-primary-foreground rounded px-2 py-1 text-xs">5</span>

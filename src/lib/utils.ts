@@ -12,8 +12,7 @@ import {
   ImpactLevel,
   CardanoAddress,
   GovernanceAction,
-  VoteBreakdown,
-  Timestamp
+  VoteBreakdown
 } from "@/types/governance";
 
 /**
@@ -394,8 +393,12 @@ export function trapFocus(containerElement: HTMLElement): () => void {
     'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
   ) as NodeListOf<HTMLElement>;
   
-  const firstElement = focusableElements[0];
-  const lastElement = focusableElements[focusableElements.length - 1];
+  if (focusableElements.length === 0) {
+    return () => {}; // Return empty cleanup function if no focusable elements
+  }
+  
+  const firstElement = focusableElements[0]!;
+  const lastElement = focusableElements[focusableElements.length - 1]!;
   
   function handleTabKey(e: KeyboardEvent) {
     if (e.key !== 'Tab') return;

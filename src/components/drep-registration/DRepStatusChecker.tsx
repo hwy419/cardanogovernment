@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { User, UserPlus, CheckCircle, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
+import { User, UserPlus, CheckCircle, Loader2, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DRepRegistrationWizard } from './DRepRegistrationWizard';
 
@@ -224,7 +224,7 @@ export function DRepStatusChecker({
               Benefits of becoming a DRep:
             </h4>
             <ul className={cn('text-sm space-y-1', theme.textSecondary)}>
-              <li>• Vote on governance proposals that shape Cardano's future</li>
+              <li>• Vote on governance proposals that shape Cardano&apos;s future</li>
               <li>• Earn delegation rewards from ADA holders who trust your judgment</li>
               <li>• Participate in constitutional committee elections</li>
               <li>• Influence treasury fund allocations and protocol parameters</li>
