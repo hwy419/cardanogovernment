@@ -1,0 +1,68 @@
+{
+  "name": "cardano-governance-backend",
+  "version": "1.0.0",
+  "description": "AWS Serverless Backend for Cardano Governance Platform",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "sam local start-api",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "lint": "eslint src/**/*.ts",
+    "deploy:dev": "cdk deploy --profile governance-dev",
+    "deploy:prod": "cdk deploy --profile governance-prod",
+    "synth": "cdk synth",
+    "bootstrap": "cdk bootstrap"
+  },
+  "dependencies": {
+    "aws-lambda": "^1.0.7",
+    "@aws-sdk/client-dynamodb": "^3.658.1",
+    "@aws-sdk/client-s3": "^3.658.1",
+    "@aws-sdk/client-secrets-manager": "^3.658.1",
+    "@aws-sdk/client-eventbridge": "^3.658.1",
+    "@aws-sdk/client-apigatewaymanagementapi": "^3.658.1",
+    "@aws-sdk/lib-dynamodb": "^3.658.1",
+    "@aws-sdk/util-dynamodb": "^3.658.1",
+    
+    "@middy/core": "^5.4.6",
+    "@middy/http-json-body-parser": "^5.4.6",
+    "@middy/http-error-handler": "^5.4.6",
+    "@middy/http-cors": "^5.4.6",
+    "@middy/http-security-headers": "^5.4.6",
+    "@middy/validator": "^5.4.6",
+    "@middy/warmup": "^5.4.6",
+    
+    "zod": "^3.23.8",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "uuid": "^10.0.0",
+    "winston": "^3.14.2",
+    
+    "@emurgo/cardano-serialization-lib-nodejs": "^12.0.1",
+    "@blockfrost/blockfrost-js": "^5.4.0",
+    "cardano-js-sdk": "^0.35.1",
+    "lucid-cardano": "^0.10.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.5",
+    "@types/aws-lambda": "^8.10.143",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/uuid": "^10.0.0",
+    "typescript": "^5.6.2",
+    "vitest": "^2.0.5",
+    "eslint": "^8.57.0",
+    "@typescript-eslint/eslint-plugin": "^8.5.0",
+    "@typescript-eslint/parser": "^8.5.0",
+    
+    "aws-cdk-lib": "^2.156.0",
+    "constructs": "^10.3.0",
+    "@aws-cdk/aws-lambda-nodejs": "^2.156.0",
+    "esbuild": "^0.23.1",
+    
+    "aws-sam-cli": "^1.122.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
