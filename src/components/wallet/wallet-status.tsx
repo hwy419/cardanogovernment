@@ -60,31 +60,33 @@ export function WalletStatus({
   };
 
   return (
-    <div className={`inline-flex items-center gap-3 bg-white border rounded-lg shadow-sm ${sizeClasses[size]} ${className || ''}`}>
+    <div className={`inline-flex items-center gap-2 sm:gap-3 bg-card border border-border rounded-lg shadow-sm ${sizeClasses[size]} ${className || ''} w-full`}>
       {/* Wallet Icon & Name */}
-      <div className="flex items-center gap-2">
-        <div className="text-lg">{walletConfig.icon}</div>
-        <div>
-          <div className="font-medium text-gray-900">
+      <div className="flex items-center gap-2 min-w-0 flex-shrink">
+        <div className="text-lg flex-shrink-0">{walletConfig.icon}</div>
+        <div className="min-w-0 flex-shrink">
+          <div className="font-medium text-card-foreground truncate text-sm sm:text-base">
             {walletConfig.displayName}
           </div>
           {/* Network Badge */}
           <div className="flex items-center gap-1 mt-1">
             {isMainnet && (
-              <Badge variant="default" className="text-xs bg-green-100 text-green-700">
+              <Badge variant="default" className="text-xs bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200">
                 <CheckCircle className="h-3 w-3 mr-1" />
-                Mainnet
+                <span className="hidden sm:inline">Mainnet</span>
+                <span className="sm:hidden">Main</span>
               </Badge>
             )}
             {isTestnet && (
-              <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700">
+              <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200">
                 <AlertCircle className="h-3 w-3 mr-1" />
-                Testnet
+                <span className="hidden sm:inline">Testnet</span>
+                <span className="sm:hidden">Test</span>
               </Badge>
             )}
             {!isMainnet && !isTestnet && networkId !== null && (
               <Badge variant="outline" className="text-xs">
-                Network {networkId}
+                Net {networkId}
               </Badge>
             )}
           </div>
@@ -93,9 +95,9 @@ export function WalletStatus({
 
       {/* Balance */}
       {balance && (
-        <div className="text-right">
-          <div className="text-xs text-gray-500">Balance</div>
-          <div className="font-medium text-gray-900">
+        <div className="text-right flex-shrink-0 hidden sm:block">
+          <div className="text-xs text-muted-foreground">Balance</div>
+          <div className="font-medium text-card-foreground">
             {balance} ₳
           </div>
         </div>
@@ -103,17 +105,17 @@ export function WalletStatus({
 
       {/* Address */}
       {address && (
-        <div className="flex items-center gap-1">
-          <div className="text-right">
-            <div className="text-xs text-gray-500">Address</div>
-            <div className="font-mono text-sm text-gray-700">
+        <div className="flex items-center gap-1 min-w-0 flex-shrink">
+          <div className="text-right min-w-0">
+            <div className="text-xs text-muted-foreground hidden sm:block">Address</div>
+            <div className="font-mono text-xs sm:text-sm text-muted-foreground truncate max-w-16 sm:max-w-24">
               {address}
             </div>
           </div>
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 w-6 p-0"
+            className="h-6 w-6 p-0 flex-shrink-0"
             onClick={() => copyToClipboard(address, 'Address')}
           >
             <Copy className="h-3 w-3" />

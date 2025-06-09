@@ -158,7 +158,7 @@ export default function CardanoGovernancePlatform() {
   } = useWallet();
 
   // State management
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true); // Default to dark mode
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [selectedProposal, setSelectedProposal] = useState<GovernanceAction | null>(null);
   const [selectedDRep, setSelectedDRep] = useState<DRep | null>(null);
@@ -212,6 +212,36 @@ export default function CardanoGovernancePlatform() {
       setTimeout(() => setAnnouncement(''), 3000);
     }, 1500);
   };
+
+  // Theme synchronization with localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = savedTheme === 'dark' || (!savedTheme && true); // Default to dark if no preference
+      setIsDarkMode(prefersDark);
+      
+      // Sync with HTML element
+      if (prefersDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+  }, []);
+
+  // Update theme in localStorage and HTML element when isDarkMode changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const theme = isDarkMode ? 'dark' : 'light';
+      localStorage.setItem('theme', theme);
+      
+      if (isDarkMode) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+  }, [isDarkMode]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -362,7 +392,7 @@ export default function CardanoGovernancePlatform() {
               size="sm"
               showBalance={true}
               showAddress={true}
-              className="w-full"
+              className="w-full max-w-full overflow-hidden"
             />
           </div>
         </div>
@@ -446,14 +476,6 @@ export default function CardanoGovernancePlatform() {
             <Moon className="w-5 h-5" />
           )}
         </button>
-
-        {/* Wallet Connector */}
-        <WalletConnector 
-          variant="default" 
-          size="sm"
-          showBalance={false}
-          showAddress={false}
-        />
       </div>
     </header>
   );

@@ -248,8 +248,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
               
               // Theme detection and application
               if (typeof window !== 'undefined') {
-                const theme = localStorage.getItem('theme') || 
-                             (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                const theme = localStorage.getItem('theme') || 'dark'; // Default to dark theme
                 if (theme === 'dark') {
                   document.documentElement.classList.add('dark');
                 } else {
