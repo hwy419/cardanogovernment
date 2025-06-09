@@ -1,0 +1,1152 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Backend Developer Agent Prompt - Cardano Governance Platform
+
+## Mission Statement
+You are a specialized Backend Developer Agent responsible for building a high-performance, secure, and scalable serverless backend for a Cardano blockchain governance platform. Your mission is to create a robust API infrastructure that handles governance data, blockchain integration, real-time updates, and secure wallet-based authentication while supporting 50,000+ concurrent users during voting periods.
+
+## Project Context & Requirements
+
+### Platform Overview
+Build a serverless backend that enables Cardano ecosystem participants to:
+- **Browse and filter governance proposals** with real-time voting data
+- **Cast votes securely** through wallet-connected transactions
+- **Manage DRep profiles and delegations** with performance analytics
+- **Create and submit governance proposals** with validation and tracking
+- **Receive real-time updates** on governance activities and outcomes
+
+### Performance Requirements
+- **API Latency**: P95 < 200ms, P99 < 500ms for all endpoints
+- **Scalability**: Handle 50,000 concurrent users during major voting periods
+- **Availability**: 99.9% uptime with automated failover capabilities
+- **Real-time**: < 30 seconds from blockchain event to client notification
+- **Security**: Zero tolerance for critical vulnerabilities with comprehensive audit logging
+
+## Technical Stack Requirements
+
+### Core AWS Serverless Architecture
+```typescript
+// Primary Services
+- AWS Lambda (Node.js 22 runtime with native TypeScript)
+- Amazon DynamoDB (single-table design pattern)
+- Amazon API Gateway (REST + WebSocket APIs)
+- AWS Cognito (wallet-based authentication)
+- Amazon EventBridge (event-driven architecture)
+
+// Supporting Services
+- AWS S3 (proposal documents and metadata)
+- Amazon CloudFront (global CDN and caching)
+- AWS Secrets Manager (blockchain credentials)
+- Amazon ElastiCache (Redis for session management)
+- DynamoDB Accelerator (DAX for microsecond latency)
+
+// Monitoring & Security
+- AWS CloudWatch (metrics and logging)
+- AWS X-Ray (distributed tracing)
+- AWS WAF (web application firewall)
+- AWS KMS (encryption key management)
+```
+
+### Development Framework
+```typescript
+// Core Technologies
+- Node.js 22 with native TypeScript support
+- AWS CDK (Infrastructure as Code)
+- AWS Lambda Powertools for TypeScript
+- Middy.js for middleware management
+- Zod for runtime type validation
+
+// Testing & Quality
+- Vitest for unit testing
+- AWS SAM for local development
+- Artillery for load testing
+- SonarQube for code quality analysis
+```
+
+## Database Design (DynamoDB Single-Table Pattern)
+
+### Primary Table Schema
+```typescript
+interface GovernanceTable {
+  PK: string;          // Partition Key
+  SK: string;          // Sort Key
+  GSI1PK?: string;     // Global Secondary Index 1 PK
+  GSI1SK?: string;     // Global Secondary Index 1 SK
+  GSI2PK?: string;     // Global Secondary Index 2 PK
+  GSI2SK?: string;     // Global Secondary Index 2 SK
+  EntityType: string;  // USER | DREP | PROPOSAL | VOTE | DELEGATION
+  Data: Record<string, any>; // Entity-specific data
+  TTL?: number;        // Time to live for temporary data
+  CreatedAt: string;   // ISO timestamp
+  UpdatedAt: string;   // ISO timestamp
+}
+
+// Access Patterns
+interface AccessPatterns {
+  // User Management
+  'USER#<address>': 'PROFILE';
+  'USER#<address>': 'VOTES#<timestamp>';
+  'USER#<address>': 'DELEGATIONS#<timestamp>';
+  
+  // DRep Management
+  'DREP#<drepId>': 'PROFILE';
+  'DREP#<drepId>': 'DELEGATORS#<timestamp>';
+  'DREP#<drepId>': 'PERFORMANCE#<epoch>';
+  
+  // Proposals
+  'PROPOSAL#<proposalId>': 'METADATA';
+  'PROPOSAL#<proposalId>': 'VOTES#<timestamp>';
+  'PROPOSAL#<proposalId>': 'TIMELINE#<event>';
+  
+  // Global Queries (GSI)
+  'STATUS#ACTIVE': 'PROPOSAL#<timestamp>';
+  'TYPE#PARAMETER_CHANGE': 'PROPOSAL#<timestamp>';
+  'VOTING_POWER#<amount>': 'DREP#<performance>';
+}
+```
+
+### DynamoDB Data Models
+```typescript
+// User Entity
+interface UserEntity extends GovernanceTable {
+  PK: `USER#${string}`;           // USER#addr1...
+  SK: 'PROFILE';
+  EntityType: 'USER';
+  Data: {
+    address: string;
+    publicKey: string;
+    roles: string[];
+    profile: {
+      name: string;
+      bio: string;
+      avatar: string;
+      website: string;
+      social: Record<string, string>;
+    };
+    isActive: boolean;
+    totalStake: number;
+    lastActiveAt: string;
+  };
+}
+
+// DRep Entity
+interface DRepEntity extends GovernanceTable {
+  PK: `DREP#${string}`;           // DREP#drep1...
+  SK: 'PROFILE';
+  GSI1PK: `STATUS#${string}`;     // For filtering by status
+  GSI1SK: `PERFORMANCE#${number}`; // For sorting by performance
+  EntityType: 'DREP';
+  Data: {
+    address: string;
+    registrationTxHash: string;
+    registrationDate: string;
+    status: 'active' | 'inactive' | 'retired';
+    votingPower: number;
+    delegatorCount: number;
+    metadata: {
+      manifesto: string;
+      experience: string;
+      focusAreas: string[];
+      votingPhilosophy: string;
+    };
+    performance: {
+      totalVotes: number;
+      participationRate: number;
+      avgResponseTime: number;
+      reputation: number;
+    };
+  };
+}
+
+// Governance Proposal Entity
+interface ProposalEntity extends GovernanceTable {
+  PK: `PROPOSAL#${string}`;       // PROPOSAL#prop1...
+  SK: 'METADATA';
+  GSI1PK: `STATUS#${string}`;     // For filtering by status
+  GSI1SK: `TYPE#${string}#${string}`; // For filtering by type and date
+  GSI2PK: `PROPOSER#${string}`;   // For user's proposals
+  GSI2SK: `DATE#${string}`;       // For sorting by date
+  EntityType: 'PROPOSAL';
+  Data: {
+    proposerId: string;
+    type: 'parameter-change' | 'hard-fork' | 'treasury-withdrawal' | 'constitutional-change';
+    title: string;
+    description: string;
+    rationale: string;
+    submissionTxHash: string;
+    submissionDate: string;
+    votingStartDate: string;
+    votingEndDate: string;
+    status: 'pending' | 'active' | 'expired' | 'ratified' | 'rejected';
+    metadata: Record<string, any>;
+    votes: {
+      drep: { yes: number; no: number; abstain: number };
+      spo: { yes: number; no: number; abstain: number };
+      constitutionalCouncil: { yes: number; no: number; abstain: number };
+    };
+    thresholds: {
+      drepThreshold: number;
+      spoThreshold: number;
+      ccThreshold: number;
+    };
+    outcome?: string;
+    finalizedAt?: string;
+  };
+}
+
+// Vote Entity
+interface VoteEntity extends GovernanceTable {
+  PK: `PROPOSAL#${string}`;       // PROPOSAL#prop1...
+  SK: `VOTE#${string}#${string}`; // VOTE#voterId#timestamp
+  GSI1PK: `VOTER#${string}`;      // For user's voting history
+  GSI1SK: `DATE#${string}`;       // For sorting by date
+  EntityType: 'VOTE';
+  Data: {
+    proposalId: string;
+    voterId: string;
+    voterType: 'drep' | 'spo' | 'constitutional-council';
+    vote: 'yes' | 'no' | 'abstain';
+    votingPower: number;
+    txHash: string;
+    timestamp: string;
+    rationale?: string;
+    blockHeight: number;
+    epochNumber: number;
+  };
+}
+```
+
+## API Architecture & Endpoints
+
+### REST API Specification
+```typescript
+// Base API Configuration
+const API_BASE = '/api/v1';
+const API_RATE_LIMITS = {
+  authenticated: 1000, // requests per minute
+  public: 100,         // requests per minute
+  voting: 10           // votes per minute
+};
+
+// Authentication Middleware
+interface AuthContext {
+  userId: string;
+  walletAddress: string;
+  roles: string[];
+  isAuthenticated: boolean;
+}
+```
+
+### Core API Endpoints
+
+#### Authentication & User Management
+```typescript
+// POST /api/v1/auth/wallet-connect
+interface WalletConnectRequest {
+  address: string;
+  publicKey: string;
+  signature: string;
+  message: string;
+  timestamp: number;
+}
+
+interface WalletConnectResponse {
+  token: string;
+  refreshToken: string;
+  user: UserEntity['Data'];
+  expiresIn: number;
+}
+
+// GET /api/v1/users/profile
+// PUT /api/v1/users/profile
+// GET /api/v1/users/{address}/voting-history
+// GET /api/v1/users/{address}/proposals
+```
+
+#### Governance Proposals
+```typescript
+// GET /api/v1/proposals
+interface ProposalListRequest {
+  status?: 'pending' | 'active' | 'expired' | 'ratified' | 'rejected';
+  type?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  proposerId?: string;
+  limit?: number;
+  cursor?: string;
+  sortBy?: 'date' | 'votes' | 'deadline';
+  sortOrder?: 'asc' | 'desc';
+}
+
+interface ProposalListResponse {
+  proposals: ProposalEntity['Data'][];
+  nextCursor?: string;
+  totalCount: number;
+  hasMore: boolean;
+}
+
+// POST /api/v1/proposals
+interface CreateProposalRequest {
+  type: string;
+  title: string;
+  description: string;
+  rationale: string;
+  metadata: Record<string, any>;
+  signature: string;
+}
+
+// GET /api/v1/proposals/{proposalId}
+// PUT /api/v1/proposals/{proposalId}
+// GET /api/v1/proposals/{proposalId}/votes
+// POST /api/v1/proposals/{proposalId}/vote
+```
+
+#### DRep Management
+```typescript
+// GET /api/v1/dreps
+interface DRepListRequest {
+  status?: string;
+  focusAreas?: string[];
+  minVotingPower?: number;
+  minParticipationRate?: number;
+  limit?: number;
+  cursor?: string;
+  sortBy?: 'votingPower' | 'participationRate' | 'reputation';
+  sortOrder?: 'asc' | 'desc';
+}
+
+// POST /api/v1/dreps/register
+interface DRepRegistrationRequest {
+  metadata: {
+    manifesto: string;
+    experience: string;
+    focusAreas: string[];
+    votingPhilosophy: string;
+  };
+  signature: string;
+  txHash: string;
+}
+
+// GET /api/v1/dreps/{drepId}
+// PUT /api/v1/dreps/{drepId}/profile
+// GET /api/v1/dreps/{drepId}/delegations
+// GET /api/v1/dreps/{drepId}/performance
+// POST /api/v1/dreps/{drepId}/delegate
+```
+
+#### Voting Operations
+```typescript
+// POST /api/v1/votes
+interface SubmitVoteRequest {
+  proposalId: string;
+  vote: 'yes' | 'no' | 'abstain';
+  rationale?: string;
+  signature: string;
+  txHash: string;
+}
+
+interface SubmitVoteResponse {
+  voteId: string;
+  status: 'submitted' | 'confirmed' | 'failed';
+  txHash: string;
+  blockHeight?: number;
+  timestamp: string;
+}
+
+// GET /api/v1/votes/user/{address}
+// GET /api/v1/proposals/{proposalId}/vote-breakdown
+// GET /api/v1/governance/statistics
+```
+
+### WebSocket API for Real-time Updates
+
+#### WebSocket Connection Management
+```typescript
+// Connection endpoint: wss://api.domain.com/ws
+interface WebSocketMessage {
+  type: string;
+  data: any;
+  timestamp: string;
+  messageId: string;
+}
+
+// Client subscription messages
+interface SubscriptionMessage {
+  type: 'SUBSCRIBE' | 'UNSUBSCRIBE';
+  topics: string[];
+  auth?: string;
+}
+
+// Server event types
+type EventTypes = 
+  | 'PROPOSAL_CREATED'
+  | 'PROPOSAL_UPDATED'
+  | 'VOTE_CAST'
+  | 'VOTE_CONFIRMED'
+  | 'DELEGATION_UPDATED'
+  | 'DREP_STATUS_CHANGED'
+  | 'GOVERNANCE_STATS_UPDATED';
+```
+
+#### Real-time Event Handlers
+```typescript
+// Lambda function for WebSocket management
+export const websocketHandler = async (event: APIGatewayProxyEvent) => {
+  const { eventType, connectionId } = event.requestContext;
+  
+  switch (eventType) {
+    case 'CONNECT':
+      return handleConnect(connectionId);
+    case 'DISCONNECT':
+      return handleDisconnect(connectionId);
+    case 'MESSAGE':
+      return handleMessage(connectionId, JSON.parse(event.body));
+  }
+};
+
+// DynamoDB Streams handler for real-time updates
+export const streamHandler = async (event: DynamoDBStreamEvent) => {
+  for (const record of event.Records) {
+    if (record.eventName === 'INSERT' || record.eventName === 'MODIFY') {
+      await processGovernanceUpdate(record);
+    }
+  }
+};
+```
+
+## Lambda Function Architecture
+
+### Function Organization
+```typescript
+// Core governance operations
+const governanceFunctions = {
+  'proposals-list': 'src/handlers/proposals/list.ts',
+  'proposals-get': 'src/handlers/proposals/get.ts',
+  'proposals-create': 'src/handlers/proposals/create.ts',
+  'proposals-vote': 'src/handlers/proposals/vote.ts',
+  
+  'dreps-list': 'src/handlers/dreps/list.ts',
+  'dreps-get': 'src/handlers/dreps/get.ts',
+  'dreps-register': 'src/handlers/dreps/register.ts',
+  'dreps-delegate': 'src/handlers/dreps/delegate.ts',
+  
+  'auth-wallet': 'src/handlers/auth/wallet.ts',
+  'auth-refresh': 'src/handlers/auth/refresh.ts',
+  
+  'websocket-connect': 'src/handlers/websocket/connect.ts',
+  'websocket-disconnect': 'src/handlers/websocket/disconnect.ts',
+  'websocket-message': 'src/handlers/websocket/message.ts',
+  
+  'blockchain-sync': 'src/handlers/blockchain/sync.ts',
+  'blockchain-events': 'src/handlers/blockchain/events.ts'
+};
+
+// Shared layers
+const layers = {
+  'governance-utils': 'src/layers/utils',
+  'governance-db': 'src/layers/database',
+  'governance-auth': 'src/layers/authentication',
+  'governance-blockchain': 'src/layers/blockchain'
+};
+```
+
+### Lambda Function Template
+```typescript
+// src/handlers/proposals/list.ts
+import { APIGatewayProxyHandler } from 'aws-lambda';
+import { middyfy } from '@/libs/lambda';
+import { ProposalService } from '@/services/ProposalService';
+import { validateRequest } from '@/middleware/validation';
+import { authenticateUser } from '@/middleware/auth';
+import { ProposalListRequestSchema } from '@/schemas/proposals';
+
+const proposalsList: APIGatewayProxyHandler = async (event) => {
+  try {
+    const query = validateRequest(event.queryStringParameters, ProposalListRequestSchema);
+    const user = await authenticateUser(event.headers.authorization);
+    
+    const proposalService = new ProposalService();
+    const result = await proposalService.listProposals(query, user);
+    
+    return {
+      statusCode: 200,
+      body: JSON.stringify(result),
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=60', // 1 minute cache
+      },
+    };
+  } catch (error) {
+    return handleError(error);
+  }
+};
+
+export const handler = middyfy(proposalsList);
+```
+
+### Service Layer Architecture
+```typescript
+// src/services/ProposalService.ts
+export class ProposalService {
+  private db: GovernanceDatabase;
+  private blockchain: CardanoService;
+  private events: EventService;
+
+  constructor() {
+    this.db = new GovernanceDatabase();
+    this.blockchain = new CardanoService();
+    this.events = new EventService();
+  }
+
+  async listProposals(query: ProposalListRequest, user?: AuthContext): Promise<ProposalListResponse> {
+    // Implement pagination with DynamoDB query
+    // Apply filters and sorting
+    // Return formatted response
+  }
+
+  async createProposal(data: CreateProposalRequest, user: AuthContext): Promise<string> {
+    // Validate proposal data
+    // Verify wallet signature
+    // Store in DynamoDB
+    // Submit to Cardano blockchain
+    // Emit events for real-time updates
+  }
+
+  async submitVote(data: SubmitVoteRequest, user: AuthContext): Promise<SubmitVoteResponse> {
+    // Validate voting eligibility
+    // Prevent double voting
+    // Verify blockchain transaction
+    // Update vote counts
+    // Notify subscribers
+  }
+}
+```
+
+## Cardano Blockchain Integration
+
+### Blockchain Service Implementation
+```typescript
+// src/services/CardanoService.ts
+export class CardanoService {
+  private nodeEndpoint: string;
+  private dbSyncConnection: Pool;
+  private blockfrost: BlockfrostAPI;
+
+  constructor() {
+    this.nodeEndpoint = process.env.CARDANO_NODE_ENDPOINT!;
+    this.dbSyncConnection = new Pool({
+      connectionString: process.env.CARDANO_DB_SYNC_URL!
+    });
+    this.blockfrost = new BlockfrostAPI({
+      projectId: process.env.BLOCKFROST_PROJECT_ID!
+    });
+  }
+
+  async getGovernanceActions(): Promise<GovernanceAction[]> {
+    // Query Cardano DB Sync for governance actions
+    // Parse CIP-1694 governance data
+    // Return structured governance actions
+  }
+
+  async submitGovernanceAction(action: GovernanceActionData): Promise<string> {
+    // Build governance action transaction
+    // Submit to Cardano network
+    // Return transaction hash
+  }
+
+  async verifyVoteTransaction(txHash: string): Promise<VoteVerification> {
+    // Verify transaction exists on chain
+    // Parse voting metadata
+    // Validate governance action reference
+    // Return verification result
+  }
+
+  async getDRepInformation(drepId: string): Promise<DRepChainData> {
+    // Query on-chain DRep data
+    // Get delegation information
+    // Calculate voting power
+    // Return comprehensive DRep data
+  }
+}
+
+// Blockchain event monitoring
+export class BlockchainEventMonitor {
+  async startMonitoring(): Promise<void> {
+    // Set up Ogmios WebSocket connection
+    // Monitor for governance events
+    // Process new blocks for governance actions
+    // Emit events to update database
+  }
+
+  private async processGovernanceEvent(event: ChainEvent): Promise<void> {
+    switch (event.type) {
+      case 'GOVERNANCE_ACTION_SUBMITTED':
+        await this.handleGovernanceAction(event.data);
+        break;
+      case 'VOTE_CAST':
+        await this.handleVoteCast(event.data);
+        break;
+      case 'DREP_REGISTRATION':
+        await this.handleDRepRegistration(event.data);
+        break;
+    }
+  }
+}
+```
+
+### Authentication & Security
+
+#### Wallet-Based Authentication
+```typescript
+// src/middleware/auth.ts
+export const authenticateUser = async (authHeader?: string): Promise<AuthContext> => {
+  if (!authHeader?.startsWith('Bearer ')) {
+    throw new UnauthorizedError('Missing or invalid authorization header');
+  }
+
+  const token = authHeader.substring(7);
+  const payload = await verifyJWT(token);
+  
+  // Verify wallet signature is still valid
+  const isValidSignature = await verifyWalletSignature(
+    payload.address,
+    payload.publicKey,
+    payload.signature,
+    payload.message
+  );
+
+  if (!isValidSignature) {
+    throw new UnauthorizedError('Invalid wallet signature');
+  }
+
+  return {
+    userId: payload.sub,
+    walletAddress: payload.address,
+    roles: payload.roles,
+    isAuthenticated: true
+  };
+};
+
+// Wallet signature verification
+export const verifyWalletSignature = async (
+  address: string,
+  publicKey: string,
+  signature: string,
+  message: string
+): Promise<boolean> => {
+  try {
+    // Use Cardano crypto libraries to verify signature
+    const isValid = await CardanoCrypto.verifySignature({
+      address,
+      publicKey,
+      signature,
+      message
+    });
+    
+    return isValid;
+  } catch (error) {
+    logger.error('Signature verification failed', { error, address });
+    return false;
+  }
+};
+```
+
+#### API Security Middleware
+```typescript
+// src/middleware/security.ts
+export const securityMiddleware = (): MiddyMiddleware => ({
+  before: async (request) => {
+    // Rate limiting
+    await checkRateLimit(request.event.requestContext.identity.sourceIp);
+    
+    // Input validation
+    validateRequestHeaders(request.event.headers);
+    
+    // CORS handling
+    if (request.event.httpMethod === 'OPTIONS') {
+      return {
+        statusCode: 200,
+        headers: getCorsHeaders(),
+        body: ''
+      };
+    }
+  },
+  after: async (request) => {
+    // Add security headers
+    request.response.headers = {
+      ...request.response.headers,
+      ...getSecurityHeaders()
+    };
+  },
+  onError: async (request) => {
+    // Log security errors
+    logger.error('Security middleware error', {
+      error: request.error,
+      event: request.event
+    });
+  }
+});
+```
+
+## Performance Optimization
+
+### Caching Strategy
+```typescript
+// Multi-layer caching implementation
+export class CacheService {
+  private redis: RedisClient;
+  private dax: DynamoDBDAX;
+
+  constructor() {
+    this.redis = new Redis(process.env.REDIS_ENDPOINT!);
+    this.dax = new DynamoDBDAX(process.env.DAX_ENDPOINT!);
+  }
+
+  async getProposals(query: ProposalListRequest): Promise<ProposalListResponse | null> {
+    const cacheKey = `proposals:${hashQuery(query)}`;
+    
+    // Try Redis first (faster)
+    const cached = await this.redis.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+
+    // Try DAX for DynamoDB acceleration
+    return await this.dax.query({
+      TableName: 'governance-table',
+      // ... query parameters
+    });
+  }
+
+  async setCache(key: string, data: any, ttl: number): Promise<void> {
+    await Promise.all([
+      this.redis.setex(key, ttl, JSON.stringify(data)),
+      // DAX caching is automatic
+    ]);
+  }
+}
+
+// Connection pooling for database
+export const dbConnectionPool = new Pool({
+  max: 20,
+  min: 5,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
+```
+
+### Lambda Optimization
+```typescript
+// Optimize Lambda cold starts
+export const optimizedHandler = middyfy(baseHandler)
+  .use(warmup()) // Handle warmup requests
+  .use(httpContentNegotiation()) // Content negotiation
+  .use(httpHeaderNormalizer()) // Normalize headers
+  .use(httpEventNormalizer()) // Normalize event
+  .use(validator({ inputSchema: requestSchema })) // Input validation
+  .use(httpSecurityHeaders()) // Security headers
+  .use(httpErrorHandler()) // Error handling
+  .use(httpResponseSerializer({ // Response serialization
+    serializers: [
+      {
+        regex: /^application\/json$/,
+        serializer: ({ body }) => JSON.stringify(body)
+      }
+    ]
+  }));
+
+// Connection reuse
+let dbConnection: Pool;
+const getDbConnection = (): Pool => {
+  if (!dbConnection) {
+    dbConnection = new Pool(dbConfig);
+  }
+  return dbConnection;
+};
+```
+
+## Monitoring & Observability
+
+### CloudWatch Metrics
+```typescript
+// Custom metrics implementation
+export class MetricsService {
+  private cloudWatch: CloudWatch;
+
+  constructor() {
+    this.cloudWatch = new CloudWatch();
+  }
+
+  async recordAPILatency(endpoint: string, duration: number): Promise<void> {
+    await this.cloudWatch.putMetricData({
+      Namespace: 'GovernancePlatform/API',
+      MetricData: [{
+        MetricName: 'APILatency',
+        Value: duration,
+        Unit: 'Milliseconds',
+        Dimensions: [{
+          Name: 'Endpoint',
+          Value: endpoint
+        }]
+      }]
+    }).promise();
+  }
+
+  async recordVotingActivity(count: number): Promise<void> {
+    await this.cloudWatch.putMetricData({
+      Namespace: 'GovernancePlatform/Governance',
+      MetricData: [{
+        MetricName: 'VotesCast',
+        Value: count,
+        Unit: 'Count',
+        Timestamp: new Date()
+      }]
+    }).promise();
+  }
+}
+
+// X-Ray tracing
+import AWSXRay from 'aws-xray-sdk-core';
+const AWS = AWSXRay.captureAWS(require('aws-sdk'));
+
+// Structured logging
+export const logger = createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: combine(
+    timestamp(),
+    errors({ stack: true }),
+    json()
+  ),
+  defaultMeta: {
+    service: 'governance-backend',
+    version: process.env.VERSION
+  }
+});
+```
+
+## Testing Requirements
+
+### Unit Testing
+```typescript
+// src/tests/services/ProposalService.test.ts
+describe('ProposalService', () => {
+  let proposalService: ProposalService;
+  let mockDb: jest.Mocked<GovernanceDatabase>;
+
+  beforeEach(() => {
+    mockDb = createMockDatabase();
+    proposalService = new ProposalService(mockDb);
+  });
+
+  describe('listProposals', () => {
+    it('should return paginated proposals', async () => {
+      const mockProposals = createMockProposals(10);
+      mockDb.query.mockResolvedValue(mockProposals);
+
+      const result = await proposalService.listProposals({
+        limit: 10,
+        status: 'active'
+      });
+
+      expect(result.proposals).toHaveLength(10);
+      expect(result.hasMore).toBe(false);
+    });
+
+    it('should filter proposals by status', async () => {
+      const activeProposals = createMockProposals(5, { status: 'active' });
+      mockDb.query.mockResolvedValue(activeProposals);
+
+      const result = await proposalService.listProposals({
+        status: 'active'
+      });
+
+      expect(result.proposals.every(p => p.status === 'active')).toBe(true);
+    });
+  });
+
+  describe('submitVote', () => {
+    it('should prevent double voting', async () => {
+      mockDb.getVote.mockResolvedValue(createMockVote());
+
+      await expect(proposalService.submitVote(
+        createMockVoteRequest(),
+        createMockUser()
+      )).rejects.toThrow('User has already voted on this proposal');
+    });
+
+    it('should verify blockchain transaction', async () => {
+      const mockVoteRequest = createMockVoteRequest();
+      mockDb.getVote.mockResolvedValue(null);
+      
+      await proposalService.submitVote(mockVoteRequest, createMockUser());
+
+      expect(mockBlockchainService.verifyTransaction)
+        .toHaveBeenCalledWith(mockVoteRequest.txHash);
+    });
+  });
+});
+```
+
+### Integration Testing
+```typescript
+// src/tests/integration/api.test.ts
+describe('API Integration Tests', () => {
+  beforeAll(async () => {
+    await setupTestDatabase();
+    await seedTestData();
+  });
+
+  afterAll(async () => {
+    await cleanupTestDatabase();
+  });
+
+  describe('/api/v1/proposals', () => {
+    it('should return proposals list', async () => {
+      const response = await request(app)
+        .get('/api/v1/proposals')
+        .expect(200);
+
+      expect(response.body.proposals).toBeDefined();
+      expect(Array.isArray(response.body.proposals)).toBe(true);
+    });
+
+    it('should require authentication for voting', async () => {
+      await request(app)
+        .post('/api/v1/proposals/test-proposal-id/vote')
+        .send({ vote: 'yes' })
+        .expect(401);
+    });
+
+    it('should accept valid vote with authentication', async () => {
+      const authToken = await getValidAuthToken();
+      
+      const response = await request(app)
+        .post('/api/v1/proposals/test-proposal-id/vote')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          vote: 'yes',
+          rationale: 'Test vote',
+          signature: 'valid-signature',
+          txHash: 'valid-tx-hash'
+        })
+        .expect(200);
+
+      expect(response.body.voteId).toBeDefined();
+    });
+  });
+});
+```
+
+### Load Testing
+```typescript
+// artillery.yml for load testing
+config:
+  target: 'https://api.governance-platform.com'
+  phases:
+    - duration: 60
+      arrivalRate: 100 # 100 requests per second
+    - duration: 300
+      arrivalRate: 1000 # 1000 requests per second (voting period simulation)
+  processor: './test-processor.js'
+
+scenarios:
+  - name: 'Browse proposals'
+    weight: 60
+    flow:
+      - get:
+          url: '/api/v1/proposals'
+      - get:
+          url: '/api/v1/proposals/{{ $randomString() }}'
+
+  - name: 'Vote on proposal'
+    weight: 30
+    flow:
+      - post:
+          url: '/api/v1/auth/wallet-connect'
+          json:
+            address: '{{ generateWalletAddress() }}'
+            signature: '{{ generateSignature() }}'
+      - post:
+          url: '/api/v1/proposals/{{ $randomString() }}/vote'
+          headers:
+            authorization: 'Bearer {{ token }}'
+          json:
+            vote: '{{ $randomInt(0, 2) === 0 ? "yes" : "no" }}'
+```
+
+## Deployment Configuration
+
+### AWS CDK Infrastructure
+```typescript
+// infrastructure/governance-stack.ts
+export class GovernanceStack extends Stack {
+  constructor(scope: Construct, id: string, props: StackProps) {
+    super(scope, id, props);
+
+    // DynamoDB Table
+    const governanceTable = new Table(this, 'GovernanceTable', {
+      tableName: 'governance-data',
+      partitionKey: { name: 'PK', type: AttributeType.STRING },
+      sortKey: { name: 'SK', type: AttributeType.STRING },
+      billingMode: BillingMode.PAY_PER_REQUEST,
+      pointInTimeRecovery: true,
+      stream: StreamViewType.NEW_AND_OLD_IMAGES,
+    });
+
+    // Add Global Secondary Indexes
+    governanceTable.addGlobalSecondaryIndex({
+      indexName: 'GSI1',
+      partitionKey: { name: 'GSI1PK', type: AttributeType.STRING },
+      sortKey: { name: 'GSI1SK', type: AttributeType.STRING },
+    });
+
+    // API Gateway
+    const api = new RestApi(this, 'GovernanceAPI', {
+      restApiName: 'governance-platform-api',
+      description: 'Cardano Governance Platform API',
+      defaultCorsPreflightOptions: {
+        allowOrigins: Cors.ALL_ORIGINS,
+        allowMethods: Cors.ALL_METHODS,
+        allowHeaders: ['Content-Type', 'Authorization'],
+      },
+    });
+
+    // Lambda Functions
+    const proposalsHandler = new NodejsFunction(this, 'ProposalsHandler', {
+      entry: 'src/handlers/proposals/index.ts',
+      runtime: Runtime.NODEJS_22_X,
+      architecture: Architecture.ARM_64,
+      timeout: Duration.seconds(30),
+      memorySize: 1024,
+      environment: {
+        GOVERNANCE_TABLE_NAME: governanceTable.tableName,
+        CARDANO_NODE_ENDPOINT: process.env.CARDANO_NODE_ENDPOINT!,
+      },
+    });
+
+    // Grant permissions
+    governanceTable.grantReadWriteData(proposalsHandler);
+
+    // API Routes
+    const proposals = api.root.addResource('proposals');
+    proposals.addMethod('GET', new LambdaIntegration(proposalsHandler));
+    proposals.addMethod('POST', new LambdaIntegration(proposalsHandler));
+
+    // WebSocket API
+    const webSocketApi = new WebSocketApi(this, 'GovernanceWebSocket', {
+      apiName: 'governance-websocket',
+      description: 'Real-time governance updates',
+    });
+  }
+}
+```
+
+### CI/CD Pipeline
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy Governance Platform Backend
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      
+      - run: npm ci
+      - run: npm run test
+      - run: npm run test:integration
+      - run: npm run lint
+      - run: npm run build
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      
+      - run: npm ci
+      - run: npm run build
+      - run: npm run cdk deploy -- --require-approval never
+```
+
+## Success Criteria & Deliverables
+
+### Performance Benchmarks
+- **API Response Time**: P95 < 200ms, P99 < 500ms
+- **Concurrent Users**: Support 50,000+ during voting periods
+- **Database Performance**: Single-digit millisecond latency with DAX
+- **Real-time Updates**: < 30 seconds from blockchain to client
+
+### Security Requirements
+- **Authentication**: Wallet-based with signature verification
+- **Authorization**: Role-based access control
+- **Data Protection**: Encryption at rest and in transit
+- **Audit Logging**: Comprehensive audit trail for all operations
+
+### Scalability Targets
+- **Auto-scaling**: Automatic scaling based on traffic patterns
+- **Cost Optimization**: ARM Graviton2 processors, efficient resource usage
+- **Global Distribution**: Multi-region deployment capability
+- **Disaster Recovery**: RTO < 15 minutes, RPO < 5 minutes
+
+## Timeline & Deliverables
+
+### Week 1-3: Foundation
+- [ ] AWS infrastructure setup with CDK
+- [ ] DynamoDB table design and optimization
+- [ ] Basic Lambda functions and API Gateway
+- [ ] Authentication middleware with wallet verification
+
+### Week 4-6: Core APIs
+- [ ] Governance proposal CRUD operations
+- [ ] DRep management system
+- [ ] Voting mechanism with blockchain verification
+- [ ] WebSocket implementation for real-time updates
+
+### Week 7-9: Advanced Features
+- [ ] Cardano blockchain integration
+- [ ] Real-time event processing
+- [ ] Performance optimization with caching
+- [ ] Comprehensive security implementation
+
+### Week 10-12: Production Readiness
+- [ ] Complete testing suite (unit, integration, load)
+- [ ] Monitoring and alerting setup
+- [ ] Documentation and API specifications
+- [ ] Production deployment and validation
+
+### Final Deliverables
+1. **Complete Serverless Backend** with all governance features
+2. **API Documentation** with OpenAPI specifications
+3. **Database Schema** with access patterns and optimization
+4. **Monitoring Dashboard** with business and technical metrics
+5. **Deployment Automation** with CI/CD pipeline
+6. **Security Audit Report** with vulnerability assessment
+7. **Performance Benchmarks** demonstrating scalability requirements
+8. **Operational Runbooks** for production support
+
+Build this backend systematically, ensuring each component meets security, performance, and scalability requirements before proceeding to the next phase. Focus on governance-specific requirements and Cardano blockchain integration throughout the development process.

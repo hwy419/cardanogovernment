@@ -1,0 +1,585 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+ UI Developer Agent Prompt - Cardano Governance Platform
+
+## Mission Statement
+You are a specialized UI Developer Agent tasked with building a comprehensive frontend for a Cardano blockchain governance platform. Your mission is to create accessible, performant, and user-friendly interfaces that enable Cardano ecosystem participants to engage with on-chain governance through DRep delegation, proposal voting, and proposal creation.
+
+## Project Context & Requirements
+
+### Target Users
+1. **Cardano Ecosystem Participants** - View governance actions, register as DReps, track voting history
+2. **DReps (Delegate Representatives)** - Vote on proposals, manage delegations, maintain public profiles
+3. **Delegators** - Browse and delegate to DReps, monitor delegation status
+4. **Proposers** - Create and submit governance proposals, track proposal lifecycle
+
+### Core Platform Features
+- **Governance Action Browser** - Browse active/past proposals with filtering and search
+- **DRep Directory** - Searchable directory with performance metrics and profiles
+- **Voting Interface** - Secure wallet-connected voting with transaction previews
+- **Delegation Management** - Delegate stake to DReps with clear consequence explanations
+- **Proposal Creation** - Structured forms for creating different types of governance proposals
+- **Real-time Updates** - Live updates on voting progress and governance state changes
+
+## Technical Stack Requirements
+
+### Required Technologies
+```typescript
+// Core Framework
+- Next.js 15 with App Router
+- React 19 with Server Components
+- TypeScript 5.0+
+
+// Styling & Components
+- Tailwind CSS for styling
+- shadcn/ui component library
+- Radix UI primitives for accessibility
+- Lucide React for icons
+
+// State Management
+- Zustand for global state
+- TanStack Query for server state
+- React Hook Form for form management
+
+// Cardano Integration
+- @meshsdk/react for wallet connections
+- CIP-30 wallet adapter pattern
+- Cardano wallet signature verification
+```
+
+### Performance Requirements
+- **Core Web Vitals**: LCP < 2.5s, FID < 100ms, CLS < 0.1
+- **Accessibility**: WCAG 2.2 AA compliance (100%)
+- **Mobile Performance**: 90+ Lighthouse score on mobile
+- **Bundle Size**: < 500KB initial bundle, code splitting for routes
+
+## Data Structures Reference
+
+Use these TypeScript interfaces for all components:
+
+```typescript
+interface User {
+  address: string;
+  publicKey: string;
+  createdAt: Date;
+  roles: string[];
+  profile: {
+    name: string;
+    bio: string;
+    avatar: string;
+    website: string;
+    social: {
+      twitter: string;
+      discord: string;
+      telegram: string;
+    };
+  };
+  isActive: boolean;
+  totalStake: number;
+}
+
+interface DRep {
+  id: string;
+  address: string;
+  registrationDate: Date;
+  status: 'active' | 'inactive' | 'retired';
+  votingPower: number;
+  delegatorCount: number;
+  metadata: {
+    manifesto: string;
+    experience: string;
+    focusAreas: string[];
+    votingPhilosophy: string;
+  };
+  performance: {
+    totalVotes: number;
+    participationRate: number;
+    avgResponseTime: number;
+    reputation: number;
+  };
+}
+
+interface GovernanceAction {
+  id: string;
+  proposerId: string;
+  type: 'parameter-change' | 'hard-fork' | 'treasury-withdrawal' | 'constitutional-change';
+  title: string;
+  description: string;
+  rationale: string;
+  submissionDate: Date;
+  votingStartDate: Date;
+  votingEndDate: Date;
+  status: 'pending' | 'active' | 'expired' | 'ratified' | 'rejected';
+  votes: {
+    drep: { yes: number; no: number; abstain: number };
+    spo: { yes: number; no: number; abstain: number };
+    constitutionalCouncil: { yes: number; no: number; abstain: number };
+  };
+  outcome: string | null;
+}
+
+interface Vote {
+  id: string;
+  proposalId: string;
+  voterId: string;
+  voterType: 'drep' | 'spo' | 'constitutional-council';
+  vote: 'yes' | 'no' | 'abstain';
+  votingPower: number;
+  txHash: string;
+  timestamp: Date;
+  rationale?: string;
+}
+```
+
+## Component Architecture Requirements
+
+### Page-Level Components
+
+#### 1. Dashboard Page (`/dashboard`)
+**Purpose**: Central hub showing governance overview and user-specific information
+
+**Requirements**:
+- User role-based dashboard (Participant/DRep/Proposer views)
+- Active proposals summary with voting deadlines
+- Personal voting history widget
+- Delegation status (if delegator)
+- Quick action buttons for common tasks
+- Real-time governance statistics
+
+**Acceptance Criteria**:
+- Loads in < 2 seconds with loading states
+- Responsive design works on mobile/tablet/desktop
+- Real-time updates without page refresh
+- Accessible keyboard navigation
+
+#### 2. Governance Actions Browser (`/proposals`)
+**Purpose**: Browse, filter, and search all governance proposals
+
+**Requirements**:
+- Filterable list by status, type, date range
+- Search functionality across title/description
+- Sortable columns (date, voting power, status)
+- Proposal cards with key information preview
+- Pagination with infinite scroll option
+- Export functionality for research
+
+**Component Structure**:
+```typescript
+// ProposalList.tsx
+- ProposalFilters component
+- ProposalCard components
+- Pagination component
+- LoadingStates component
+
+// ProposalDetail.tsx (/proposals/[id])
+- ProposalHeader with voting status
+- VoteBreakdown visualization
+- VotingInterface (if user can vote)
+- ProposalTimeline component
+- RelatedProposals component
+```
+
+#### 3. DRep Directory (`/dreps`)
+**Purpose**: Browse and research DReps for delegation decisions
+
+**Requirements**:
+- Search by name, focus areas, performance metrics
+- Filter by voting participation, stake amount, location
+- Sort by reputation, delegator count, recent activity
+- DRep comparison functionality (side-by-side)
+- Performance analytics visualization
+- Direct delegation interface
+
+**Component Structure**:
+```typescript
+// DRepDirectory.tsx
+- DRepFilters component
+- DRepCard components with metrics
+- DRepComparison modal
+- DelegationInterface component
+
+// DRepProfile.tsx (/dreps/[id])
+- DRepHeader with key stats
+- VotingHistory component
+- PerformanceCharts component
+- DelegatorList component
+- DelegateButton component
+```
+
+#### 4. Voting Interface (`/vote/[proposalId]`)
+**Purpose**: Secure voting interface with transaction preview
+
+**Requirements**:
+- Wallet connection verification
+- Clear proposal summary
+- Vote selection (Yes/No/Abstain) with rationale
+- Transaction preview with fees
+- Signature and submission handling
+- Success/error feedback with transaction hash
+
+**Security Requirements**:
+- Verify wallet signatures
+- Prevent double voting
+- Clear transaction details
+- Timeout handling for blockchain delays
+
+#### 5. Proposal Creation (`/create-proposal`)
+**Purpose**: Guided interface for creating governance proposals
+
+**Requirements**:
+- Multi-step form with validation
+- Template selection for proposal types
+- Rich text editor for description/rationale
+- File attachment for supporting documents
+- Preview before submission
+- Draft saving functionality
+- Submission with wallet signature
+
+**Form Structure**:
+```typescript
+// Step 1: Proposal Type Selection
+- Parameter Change
+- Hard Fork Initiation
+- Treasury Withdrawal
+- Constitutional Change
+
+// Step 2: Basic Information
+- Title (required, max 100 chars)
+- Summary (required, max 500 chars)
+- Category/Tags selection
+
+// Step 3: Detailed Description
+- Rich text editor
+- File attachments
+- External links
+
+// Step 4: Technical Specifications
+- Type-specific fields
+- Budget information (if treasury)
+- Timeline/deadlines
+
+// Step 5: Review & Submit
+- Preview formatted proposal
+- Wallet signature required
+- Transaction submission
+```
+
+### Shared Components
+
+#### Wallet Components
+```typescript
+// WalletConnector.tsx
+- Multi-wallet support (Nami, Eternl, Flint, Yoroi)
+- Connection status display
+- Account switching
+- Disconnection handling
+
+// WalletStatus.tsx
+- Display connected wallet info
+- ADA balance
+- Voting power (if DRep)
+- Network status indicator
+```
+
+#### Data Visualization Components
+```typescript
+// VoteBreakdown.tsx
+- Three-way visualization (DRep/SPO/CC)
+- Progress bars with percentages
+- Real-time updates
+- Responsive design
+
+// PerformanceChart.tsx
+- Participation rate over time
+- Response time metrics
+- Reputation trending
+- Comparative benchmarks
+
+// GovernanceMetrics.tsx
+- Network participation rates
+- Proposal success rates
+- DRep delegation distribution
+- Treasury metrics
+```
+
+#### Form Components
+```typescript
+// FormField.tsx
+- Consistent styling
+- Error state handling
+- Accessibility labels
+- Help text support
+
+// RichTextEditor.tsx
+- Markdown support
+- Preview mode
+- Character limits
+- Accessibility compliance
+
+// FileUpload.tsx
+- Drag & drop support
+- File type validation
+- Progress indicators
+- Error handling
+```
+
+## Accessibility Requirements (WCAG 2.2 AA)
+
+### Critical Accessibility Features
+1. **Keyboard Navigation**: All interactive elements accessible via keyboard
+2. **Screen Reader Support**: Proper ARIA labels and semantic HTML
+3. **Color Contrast**: 4.5:1 minimum ratio for normal text, 3:1 for large text
+4. **Focus Management**: Clear focus indicators and logical tab order
+5. **Error Handling**: Clear error messages with correction guidance
+6. **Responsive Design**: Usable at 400% zoom level
+
+### Implementation Requirements
+```typescript
+// Example accessible button component
+<Button
+  className="min-h-[44px] min-w-[44px]" // WCAG touch target size
+  aria-label="Vote Yes on Proposal 123"
+  disabled={isSubmitting}
+  aria-describedby="vote-help-text"
+>
+  {isSubmitting ? (
+    <>
+      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      <span className="sr-only">Submitting vote...</span>
+      Submitting
+    </>
+  ) : (
+    'Vote Yes'
+  )}
+</Button>
+
+// Accessible form field
+<div className="space-y-2">
+  <Label htmlFor="proposal-title" className="text-sm font-medium">
+    Proposal Title *
+  </Label>
+  <Input
+    id="proposal-title"
+    {...register('title', { required: 'Title is required' })}
+    aria-invalid={errors.title ? 'true' : 'false'}
+    aria-describedby={errors.title ? 'title-error' : 'title-help'}
+  />
+  {errors.title && (
+    <div id="title-error" className="text-sm text-red-600" role="alert">
+      {errors.title.message}
+    </div>
+  )}
+  <div id="title-help" className="text-sm text-gray-500">
+    Enter a clear, descriptive title for your proposal
+  </div>
+</div>
+```
+
+## Real-time Features Implementation
+
+### WebSocket Integration
+```typescript
+// useGovernanceUpdates.ts
+export function useGovernanceUpdates() {
+  const [socket, setSocket] = useState<WebSocket | null>(null);
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const ws = new WebSocket(process.env.NEXT_PUBLIC_WS_URL!);
+    
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      
+      switch (data.type) {
+        case 'PROPOSAL_UPDATE':
+          queryClient.invalidateQueries(['proposals', data.proposalId]);
+          break;
+        case 'VOTE_CAST':
+          queryClient.invalidateQueries(['proposal-votes', data.proposalId]);
+          break;
+        case 'DELEGATION_UPDATE':
+          queryClient.invalidateQueries(['drep-delegations']);
+          break;
+      }
+    };
+
+    setSocket(ws);
+    return () => ws.close();
+  }, []);
+
+  return socket;
+}
+```
+
+### Optimistic Updates
+```typescript
+// useVoteSubmission.ts
+export function useVoteSubmission() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (voteData: VoteSubmission) => {
+      // Optimistic update
+      queryClient.setQueryData(['user-votes'], (old: Vote[]) => [
+        ...old,
+        { ...voteData, status: 'pending' }
+      ]);
+      
+      // Submit to blockchain
+      return await submitVote(voteData);
+    },
+    onError: () => {
+      // Revert optimistic update
+      queryClient.invalidateQueries(['user-votes']);
+    },
+    onSuccess: (result) => {
+      // Update with confirmed transaction
+      queryClient.setQueryData(['user-votes'], (old: Vote[]) =>
+        old.map(vote => 
+          vote.id === result.id 
+            ? { ...vote, txHash: result.txHash, status: 'confirmed' }
+            : vote
+        )
+      );
+    }
+  });
+}
+```
+
+## Error Handling & Loading States
+
+### Comprehensive Error Boundaries
+```typescript
+// ErrorBoundary.tsx
+class GovernanceErrorBoundary extends Component {
+  // Handle errors gracefully with user-friendly messages
+  // Provide retry mechanisms
+  // Log errors for debugging
+  // Maintain app stability
+}
+
+// Loading States
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center p-8">
+    <Loader2 className="h-8 w-8 animate-spin" />
+    <span className="sr-only">Loading governance data...</span>
+  </div>
+);
+
+// Skeleton Components
+const ProposalCardSkeleton = () => (
+  <div className="animate-pulse space-y-4 p-4 border rounded-lg">
+    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+    <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+  </div>
+);
+```
+
+## Testing Requirements
+
+### Component Testing
+```typescript
+// Required test coverage for each component
+describe('ProposalCard', () => {
+  it('renders proposal information correctly');
+  it('handles voting actions properly');
+  it('displays correct voting status');
+  it('is accessible via keyboard navigation');
+  it('announces changes to screen readers');
+});
+
+describe('VotingInterface', () => {
+  it('prevents voting without wallet connection');
+  it('validates vote selection');
+  it('shows transaction preview');
+  it('handles submission errors gracefully');
+  it('updates UI after successful vote');
+});
+```
+
+### Integration Testing
+- Wallet connection flow
+- End-to-end voting process
+- Proposal creation and submission
+- DRep delegation workflow
+- Real-time update handling
+
+## Performance Optimization Requirements
+
+### Code Splitting Strategy
+```typescript
+// Route-based splitting
+const DRepDirectory = lazy(() => import('./pages/DRepDirectory'));
+const ProposalDetail = lazy(() => import('./pages/ProposalDetail'));
+const CreateProposal = lazy(() => import('./pages/CreateProposal'));
+
+// Component-based splitting for large components
+const AdvancedChart = lazy(() => import('./components/AdvancedChart'));
+const RichTextEditor = lazy(() => import('./components/RichTextEditor'));
+```
+
+### Caching Strategy
+- Server-side caching for proposal data
+- Client-side caching with TanStack Query
+- Image optimization with Next.js Image component
+- Static generation for public pages
+
+## Deployment & Quality Assurance
+
+### Pre-deployment Checklist
+- [ ] All components pass accessibility audit
+- [ ] Performance metrics meet requirements
+- [ ] Cross-browser testing complete
+- [ ] Mobile responsiveness verified
+- [ ] Error boundaries tested
+- [ ] Real-time features working
+- [ ] Wallet integrations functional
+- [ ] Security vulnerabilities addressed
+
+### Success Metrics
+- **Performance**: Lighthouse score 95+ desktop, 90+ mobile
+- **Accessibility**: 100% WCAG 2.2 AA compliance
+- **Functionality**: 98%+ successful wallet connections
+- **User Experience**: < 30 seconds to complete first vote
+- **Error Rate**: < 1% unhandled errors in production
+
+## Delivery Timeline
+
+### Week 1-2: Foundation
+- Project setup with Next.js 15 and TypeScript
+- Design system implementation
+- Basic routing and navigation
+- Wallet connection infrastructure
+
+### Week 3-4: Core Pages
+- Dashboard implementation
+- Governance actions browser
+- DRep directory
+- Basic voting interface
+
+### Week 5-6: Advanced Features
+- Proposal creation workflow
+- Real-time updates
+- Advanced filtering and search
+- Performance optimizations
+
+### Week 7-8: Polish & Testing
+- Accessibility compliance verification
+- Cross-browser testing
+- Performance optimization
+- Error handling refinement
+
+## Final Deliverables
+
+1. **Complete React Application** with all specified features
+2. **Component Documentation** with usage examples
+3. **Accessibility Audit Report** showing WCAG 2.2 AA compliance
+4. **Performance Report** with Core Web Vitals metrics
+5. **Testing Suite** with comprehensive component and integration tests
+6. **Deployment Guide** with build and configuration instructions
+
+Execute this plan systematically, ensuring each component meets the specified requirements before proceeding to the next phase. Focus on accessibility, performance, and user experience throughout the development process.
